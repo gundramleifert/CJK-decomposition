@@ -107,22 +107,24 @@ public class GetMapping {
 //dump some stuff
 
                 //show some stuff
-                try {
-                    List<Double> xs = reduceDecomposer.get("size");
-                    reduceDecomposer.remove("size");
-                    List<double[]> ys = new LinkedList<>();
-                    String[] names = new String[reduceDecomposer.size()];
-                    int idx = 0;
-                    for (String name : reduceDecomposer.keySet()) {
-                        names[idx++] = name;
-                        ys.add(DecomposerUtil.toArray(reduceDecomposer.get(name)));
-                    }
-                    Gnuplot.withGrid = true;
-                    Gnuplot.plot(DecomposerUtil.toArray(xs), ys, "CharSet size compared to average decomposition length", names, null);
+                if (cmd.hasOption('p')) {
+                    try {
+                        List<Double> xs = reduceDecomposer.get("size");
+                        reduceDecomposer.remove("size");
+                        List<double[]> ys = new LinkedList<>();
+                        String[] names = new String[reduceDecomposer.size()];
+                        int idx = 0;
+                        for (String name : reduceDecomposer.keySet()) {
+                            names[idx++] = name;
+                            ys.add(DecomposerUtil.toArray(reduceDecomposer.get(name)));
+                        }
+                        Gnuplot.withGrid = true;
+                        Gnuplot.plot(DecomposerUtil.toArray(xs), ys, "CharSet size compared to average decomposition length", names, null);
 
-                } catch (Throwable ex) {
-                    LOG.warn("GNUplot not installed correctly (or windows is used) - skip display", ex);
-                    System.out.println("GNUplot not installed correctly (or windows is used) - skip display");
+                    } catch (Throwable ex) {
+                        LOG.warn("GNUplot not installed correctly (or windows is used) - skip display", ex);
+                        System.out.println("GNUplot not installed correctly (or windows is used) - skip display");
+                    }
                 }
             }
             if (cmd.hasOption('l')) {
