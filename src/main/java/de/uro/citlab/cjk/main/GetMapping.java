@@ -20,6 +20,8 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.math3.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +78,7 @@ public class GetMapping {
             Decomposer dec = new Decomposer(coding);
             if (!cmd.hasOption('r')) {
                 if (!cmd.hasOption('i')) {
-                    help("if -r is not set, option -i have to be set.");
+                    help("if -r is not set, option -i have to be set. (set '-i ?' to load example file)");
                 }
                 //dump some stuff
 //            DecomposerUtil.saveCharSet(dec, new File(folder, "leaves.txt"), true);
@@ -84,17 +86,24 @@ public class GetMapping {
                 /////////////////////////
                 /// minimize composer ///
                 /////////////////////////
-                List<File> listFiles = FileUtil.listFiles(new File(cmd.getOptionValue('i')), "txt", true);
                 ObjectCounter<Character> oc = new ObjectCounter<>();
-                for (File listFile : listFiles) {
-                    List<String> readLines = FileUtil.readLines(listFile);
-                    for (String readLine : readLines) {
-                        for (char c : readLine.toCharArray()) {
-                            oc.add(c);
-                            ///////////////////
-                            /// count chars ///
-                            ///////////////////
-                            dec.count(String.valueOf(c));
+                if (cmd.getOptionValue('i').equals("?")) {
+                    String str = new String(IOUtils.toByteArray(this.getClass().getClassLoader().getResourceAsStream("dummy.txt")));
+                    for (char c : str.toCharArray()) {
+                        oc.add(c);
+                    }
+                } else {
+                    List<File> listFiles = FileUtil.listFiles(new File(cmd.getOptionValue('i')), "txt", true);
+                    for (File listFile : listFiles) {
+                        List<String> readLines = FileUtil.readLines(listFile);
+                        for (String readLine : readLines) {
+                            for (char c : readLine.toCharArray()) {
+                                oc.add(c);
+                                ///////////////////
+                                /// count chars ///
+                                ///////////////////
+                                dec.count(String.valueOf(c));
+                            }
                         }
                     }
                 }
