@@ -19,19 +19,19 @@ import org.slf4j.LoggerFactory;
  *
  * @author gundram
  */
-public class Sign implements Comparable<Sign> {
+public class Char implements Comparable<Char> {
 
     public final String value;
     public final int key;
 //        public final String utf8;
     private final String rawdecomposition;
-    private List<Sign> decomposition = null;
+    private List<Char> decomposition = null;
     private boolean isValid;
     private int length = -1;
-    private int countSign = 0;
+    private int countRoot = 0;
     private int countAtom = 0;
     private boolean isLeaf = false;
-    private static Logger LOG = LoggerFactory.getLogger(Sign.class);
+    private static Logger LOG = LoggerFactory.getLogger(Char.class);
     private final Decomposer root;
 
     @Override
@@ -52,7 +52,7 @@ public class Sign implements Comparable<Sign> {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final Sign other = (Sign) obj;
+        final Char other = (Char) obj;
         if (this.key != other.key) {
             return false;
         }
@@ -62,7 +62,7 @@ public class Sign implements Comparable<Sign> {
         return true;
     }
 
-    public Sign(Decomposer root, String value, int key, String rawdecomposition) {
+    public Char(Decomposer root, String value, int key, String rawdecomposition) {
         this.value = value;
         this.key = key;
         this.rawdecomposition = value.equals(rawdecomposition) ? null : rawdecomposition;
@@ -79,7 +79,7 @@ public class Sign implements Comparable<Sign> {
 //    public boolean isValid() {
 //        return isValid;
 //    }
-    public void setDecomposition(List<Sign> dec) {
+    public void setDecomposition(List<Char> dec) {
         decomposition = dec;
     }
 
@@ -93,8 +93,8 @@ public class Sign implements Comparable<Sign> {
 
     public void setLeaf() {
         if (!this.isLeaf) {
-            for (Sign sign : decomposition) {
-                sign.reduceCountAtom(countAtom);
+            for (Char c : decomposition) {
+                c.reduceCountAtom(countAtom);
             }
         }
         isLeaf = true;
@@ -102,7 +102,7 @@ public class Sign implements Comparable<Sign> {
     }
 
     public void reset() {
-        countSign = 0;
+        countRoot = 0;
         countAtom = 0;
         isLeaf = decomposition != null;
     }
@@ -114,29 +114,29 @@ public class Sign implements Comparable<Sign> {
     public void reduceCountAtom(int sum) {
         countAtom -= sum;
         if (countAtom <= 1 && sum != 0) {
-            LOG.warn("count of sign {} is reduced to {}, maybe sign can be deleted from Decomposer", this, countSign);
+            LOG.warn("count of character {} is reduced to {}, maybe character can be deleted from Decomposer", this, countRoot);
         }
         if (!isLeaf) {
-            for (Sign sign : decomposition) {
-                sign.reduceCountAtom(sum);
+            for (Char c : decomposition) {
+                c.reduceCountAtom(sum);
             }
         }
     }
 
-    public void count(boolean asSign) {
+    public void count(boolean asRoot) {
         countAtom++;
-        if (asSign) {
-            countSign++;
+        if (asRoot) {
+            countRoot++;
         }
         if (decomposition != null) {
-            for (Sign sign : decomposition) {
-                sign.count(false);
-            }
+            decomposition.forEach((c) -> {
+                c.count(false);
+            });
         }
     }
 
-    public int getCountSign() {
-        return countSign;
+    public int getCountRoot() {
+        return countRoot;
     }
 
     public int getCountAtom() {
@@ -147,10 +147,6 @@ public class Sign implements Comparable<Sign> {
         this.length = -1;
     }
 
-//    public int getLengthUnicode() {
-//        List<Sign> decUnicode = getDec();
-//        return decUnicode == null ? -1 : decUnicode.size();
-//    }
     public int getLengthAtom() {
         if (decomposition == null) {
             switch (root.coding) {
@@ -159,33 +155,19 @@ public class Sign implements Comparable<Sign> {
                     return 1;
                 case IDC:
                 case UTF8_IDC:
-                    return DecomposerUtil.isIDCSign(this) ? 0 : 1;
+                    return DecomposerUtil.isIDChar(this) ? 0 : 1;
                 default:
                     throw new RuntimeException("unexpected state");
             }
         }
         int len = 0;
-        for (Sign sign : decomposition) {
-            len += sign.getLengthAtom();
+        for (Char c : decomposition) {
+            len += c.getLengthAtom();
         }
         return len;
     }
 
-//    public int getLengthWithoutIDC() {
-//        if (isLeaf) {
-//            return DecomposerUtil.isIDCSign(this) ? 0 : 1;
-//        }
-//        int length = 0;
-//        for (Sign sign : decomposition) {
-//            length += sign.getLengthWithoutIDC();
-//        }
-//        return length;
-//
-//    }
     public int getLength() {
-//        if (length > 0) {
-//            return length;
-//        }
         if (isLeaf) {
             switch (root.coding) {
                 case ANY:
@@ -193,14 +175,14 @@ public class Sign implements Comparable<Sign> {
                     return 1;
                 case IDC:
                 case UTF8_IDC:
-                    return DecomposerUtil.isIDCSign(this) ? 0 : 1;
+                    return DecomposerUtil.isIDChar(this) ? 0 : 1;
                 default:
                     throw new RuntimeException("unexpected state");
             }
         }
         length = 0;
-        for (Sign sign : decomposition) {
-            length += sign.getLength();
+        for (Char c : decomposition) {
+            length += c.getLength();
         }
 //            if (length % 2 == 0) {
 //                throw new RuntimeException("unexpected");
@@ -210,12 +192,7 @@ public class Sign implements Comparable<Sign> {
 
     @Override
     public String toString() {
-        return String.format("[ U+%05X '%s' len=%2d/%2d (occurance=%4d/%4d) leaf=%b valid=%b]", (int) key, value, getLength(), getLengthAtom(), countSign, countAtom, isLeaf(), isValid());
-//        try {
-//            return String.format("[ U+%05x '%s' len= %d(%d) cntSn=%d cntAt=%d '%s' '%s']", (int) number, unicode, getLength(), getLengthAtom(), countSign, countAtom, getDec(), getDecFlat());
-//        } catch (Throwable ex) {
-//            return String.format("[ U+%05x '%s' len= %d(%d) cntSn=%d cntAt=%d '%s' '%s']", (int) number, unicode, getLength(), getLengthAtom(), countSign, countAtom, "?", "?");
-//        }
+        return String.format("[ U+%05X '%s' len=%2d/%2d (occurance=%4d/%4d) leaf=%b valid=%b]", (int) key, value, getLength(), getLengthAtom(), countRoot, countAtom, isLeaf(), isValid());
     }
 
     public boolean isValid() {
@@ -236,8 +213,8 @@ public class Sign implements Comparable<Sign> {
         if (isLeaf()) {
             return isValid();
         }
-        for (Sign sign : decomposition) {
-            isValidDecomposition &= sign.makeValidDec();
+        for (Char c : decomposition) {
+            isValidDecomposition &= c.makeValidDec();
         }
         if (!isValidDecomposition) {
             if (isValid()) {
@@ -255,11 +232,11 @@ public class Sign implements Comparable<Sign> {
 //    public boolean hasDec() {
 //        return decomposition != null;
 //    }
-    public List<Sign> getDecFlat() {
+    public List<Char> getDecFlat() {
         return decomposition;
     }
 
-    public List<Sign> getDec() {
+    public List<Char> getDec() {
         if (isLeaf()) {
             switch (root.coding) {
                 case ANY:
@@ -267,7 +244,7 @@ public class Sign implements Comparable<Sign> {
                     return isValid() ? Arrays.asList(this) : null;
                 case IDC:
                 case UTF8_IDC:
-                    if (DecomposerUtil.isIDCSign(this)) {
+                    if (DecomposerUtil.isIDChar(this)) {
                         return isValid() ? new LinkedList<>() : null;
                     } else {
                         return isValid() ? Arrays.asList(this) : null;
@@ -276,13 +253,10 @@ public class Sign implements Comparable<Sign> {
                     throw new RuntimeException("unexpected state");
             }
         }
-        List<Sign> res = new LinkedList<>();
-        for (Sign child : decomposition) {
-            List<Sign> dec = child.getDec();
+        List<Char> res = new LinkedList<>();
+        for (Char child : decomposition) {
+            List<Char> dec = child.getDec();
             if (dec == null) {
-//                LOG.warn("sign {} does not have a valid decomposition and is no leaf (dec = {}) -> make to leaf", this, decomposition);
-//                setLeaf();
-//                return getDec();
                 return null;
             }
             res.addAll(dec);
@@ -290,43 +264,24 @@ public class Sign implements Comparable<Sign> {
         return res;
     }
 
-    public List<Sign> getAtoms() {
-        LinkedList<Sign> res = new LinkedList<>();
+    public List<Char> getAtoms() {
+        LinkedList<Char> res = new LinkedList<>();
         if (decomposition == null) {
             res.add(this);
         } else {
-            for (Sign sign : decomposition) {
-                res.addAll(sign.getAtoms());
+            for (Char c : decomposition) {
+                res.addAll(c.getAtoms());
             }
         }
         return res;
     }
 
-//    public List<Sign> getDec() {
-//        if (isLeaf) {
-//            return Arrays.asList(this);
-//        }
-//        List<Sign> res = new LinkedList<>();
-//        for (Sign sign : decomposition) {
-//            res.addAll(sign.getDec());
-//        }
-//        return res;
-//    }
-//    private List<Sign> list getDecomposition() {
-//        if (isLeaf) {
-//            list.add(this);
-//        } else {
-//            for (Sign sign : decomposition) {
-//                sign.appendAtoms(list);
-//            }
-//        }
-//    }
     public int getScore() {
         return (getLength() - 1) * getCountAtom();
     }
 
     @Override
-    public int compareTo(Sign o2) {
+    public int compareTo(Char o2) {
         return Integer.compare(o2.getScore(), getScore());
     }
 }

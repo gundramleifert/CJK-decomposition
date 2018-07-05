@@ -3,7 +3,7 @@ package de.uro.citlab.cjk;
 import de.uro.citlab.cjk.util.DecomposerUtil;
 import de.uro.citlab.cjk.util.Gnuplot;
 import de.uro.citlab.cjk.util.FileUtil;
-import de.uro.citlab.cjk.types.Sign;
+import de.uro.citlab.cjk.types.Char;
 import eu.transkribus.errorrate.util.ObjectCounter;
 
 import java.io.File;
@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * some interesting links for additional information about decomposition of
- * signs: https://github.com/cjkvi/cjkvi-ids https://github.com/chise/isd
+ * characters: https://github.com/cjkvi/cjkvi-ids https://github.com/chise/isd
  * https://github.com/kawabata/ids
  *
  * @author gundram
@@ -60,7 +60,7 @@ public class Decomposer {
 
     }
 
-    public LinkedHashMap<Integer, Sign> signs = new LinkedHashMap<>();
+    public LinkedHashMap<Integer, Char> chars = new LinkedHashMap<>();
     private static Logger LOG = LoggerFactory.getLogger(Decomposer.class);
     public char COUNTRY = 'G';
     private final Mapper mapper = new Mapper();
@@ -89,64 +89,56 @@ public class Decomposer {
             mapper.add(idx, split[1]);
 //            mapper.add(idx, split[1]);
             String decomposed = getDecomposition(split, COUNTRY);
-            signs.put(idx, new Sign(this, split[1], idx, DecomposerUtil.hasStrokeSigns(decomposed) ? null : decomposed));
+            chars.put(idx, new Char(this, split[1], idx, DecomposerUtil.hasStrokeCharacter(decomposed) ? null : decomposed));
         }
         //add IdeographicDescriptionCharacters
-        for (char c : DecomposerUtil.IdeographicDescriptionCharacters) {
-            signs.put((int) c, new Sign(this, String.valueOf(c), (int) c, null));
+        for (char c : DecomposerUtil.IDEOGRAPHIC_DESCRIPTION_CHARACTERS) {
+            chars.put((int) c, new Char(this, String.valueOf(c), (int) c, null));
             mapper.add((int) c, String.valueOf(c));
         }
         //create deep structure
-        for (Sign value : signs.values()) {
-//            DecomposerUtil.initLeaves(value, signs, mapper,true);
+        for (Char value : chars.values()) {
             if (!initLeaves(value)) {
                 cntErrorDecompose++;
             }
         }
         //calculate length
-        for (Sign value : signs.values()) {
+        for (Char value : chars.values()) {
             value.getLength();
         }
-        LOG.info("{} of {} signs could not be decomposed, which is {} %.", cntErrorDecompose, signs.size(), ((double) ((cntErrorDecompose * 10000) / signs.size())) / 100);
-//        for (Sign value : signs.values()) {
-//            List<Sign> unicodeDecomposition = value.getDec();
-//            int length = unicodeDecomposition == null ? 0 : unicodeDecomposition.size();
-//            if (length == 0 && !value.isValid()) {
-//                continue;
-//            }
-//        }
-        //remove signs where the decomposition is not in the UTF-8 unicode area.
-        removeUnValidSigns();
+        LOG.info("{} of {} characters could not be decomposed, which is {} %.", cntErrorDecompose, chars.size(), ((double) ((cntErrorDecompose * 10000) / chars.size())) / 100);
+        //remove characters where the decomposition is not in the UTF-8 unicode area.
+        removeUnValidCharacters();
     }
 
-    private boolean initLeaves(Sign s) {
+    private boolean initLeaves(Char s) {
         String rawdecomposition = s.getRawdecomposition();
         if (rawdecomposition == null) {
             s.setLeaf();
             return s.isValid();
         }
-        List<Sign> dec = new LinkedList<>();
+        List<Char> dec = new LinkedList<>();
         int idx = 0;
 //            System.out.println("----------------");
         while (idx < rawdecomposition.length()) {
             String singleS = rawdecomposition.substring(idx, idx + 1);
 //                System.out.println(singleS.charAt(0) + " " + (int) singleS.charAt(0));
-            Sign singleSign = signs.get(mapper.get(singleS));
-            Sign sign = singleSign;
+            Char singleChar = chars.get(mapper.get(singleS));
+            Char character = singleChar;
             if (idx + 1 < rawdecomposition.length()) {
                 String doubleS = rawdecomposition.substring(idx, idx + 2);
-                Sign doubleSign = signs.get(mapper.get(doubleS));
-                if (singleSign != null && doubleSign != null) {
+                Char doubleChar = chars.get(mapper.get(doubleS));
+                if (singleChar != null && doubleChar != null) {
                     throw new RuntimeException("found two possible decomposition");
                 }
-                if (singleSign == null && doubleSign == null) {
+                if (singleChar == null && doubleChar == null) {
                     throw new RuntimeException("found no possible decomposition");
                 }
-                idx += singleSign == null ? 1 : 0;
-                sign = singleSign == null ? doubleSign : singleSign;
+                idx += singleChar == null ? 1 : 0;
+                character = singleChar == null ? doubleChar : singleChar;
             }
             idx++;
-            dec.add(sign);
+            dec.add(character);
         }
         s.setDecomposition(dec);
         return true;
@@ -155,35 +147,35 @@ public class Decomposer {
     public void count(String c) {
         Integer idx = mapper.get(c);
         if (idx == null) {
-            LOG.warn(String.format("cannot interprete sign '%s' with length %d and unicode U+%04X - sign will be added to decomposition-list as leaf", c, c.length(), (int) c.charAt(0)));
-//            throw new RuntimeException(String.format("cannot interprete sign '%s' with length %d and unicode U+%04X", c, c.length(), (int) c.charAt(0)));
+            LOG.warn(String.format("cannot interprete character '%s' with length %d and unicode U+%04X - character will be added to decomposition-list as leaf", c, c.length(), (int) c.charAt(0)));
+//            throw new RuntimeException(String.format("cannot interprete character '%s' with length %d and unicode U+%04X", c, c.length(), (int) c.charAt(0)));
             int index = (int) c.charAt(0);
             mapper.add(index, c);
-            signs.put(index, new Sign(this, c, index, null));
+            chars.put(index, new Char(this, c, index, null));
             idx = index;
         }
-        signs.get(idx).count(true);
+        chars.get(idx).count(true);
 
     }
 
     public void reset() {
-        for (Sign value : signs.values()) {
+        for (Char value : chars.values()) {
             value.reset();
         }
     }
 
-    private final void removeUnValidSigns() {
+    private void removeUnValidCharacters() {
 //        int cntNotValid = 0;
         Set<Integer> invalids = new HashSet<>();
         //reset satutus, it is was true (because leaves could have changed
-        for (Sign value : signs.values()) {
+        for (Char value : chars.values()) {
             if (!value.makeValidDec()) {
                 invalids.add(value.key);
             }
         }
-        LOG.info("{} of {} signs are not valid, which is {} %.", invalids.size(), signs.size(), ((double) ((invalids.size() * 10000) / signs.size())) / 100);
+        LOG.info("{} of {} characters are not valid, which is {} %.", invalids.size(), chars.size(), ((double) ((invalids.size() * 10000) / chars.size())) / 100);
         for (Integer number : invalids) {
-            signs.remove(number);
+            chars.remove(number);
             mapper.remove(number);
         }
 
@@ -208,13 +200,13 @@ public class Decomposer {
         return idx < 0 ? s : s.substring(0, idx);
     }
 
-    public int getSizeSigns() {
-        return this.signs.size();
+    public int getSizeChars() {
+        return this.chars.size();
     }
 
     public int getSizeLeaves() {
         int cnt = 0;
-        for (Sign value : signs.values()) {
+        for (Char value : chars.values()) {
             if (value.isLeaf()) {
                 cnt++;
             }
@@ -223,16 +215,16 @@ public class Decomposer {
     }
 
     public String decompose(String c) {
-        Sign get = signs.get(mapper.get(c));
+        Char get = chars.get(mapper.get(c));
         if (get == null) {
-            LOG.warn("cannot decompose sign '{}'" + c);
+            LOG.warn("cannot decompose character '{}'" + c);
             return null;
         }
         return DecomposerUtil.getAsString(get.getDec());
     }
 
     public String decomposeAtoms(String c) {
-        Sign get = signs.get(mapper.get(c));
+        Char get = chars.get(mapper.get(c));
         if (get == null) {
             return null;
         }
@@ -240,23 +232,24 @@ public class Decomposer {
     }
 
     public void removeSeldomLeaves(int minOccurance) {
-        for (Sign value : signs.values()) {
+        for (Char value : chars.values()) {
             if (value.isLeaf()) {
                 if (value.getCountAtom() <= minOccurance) {
                     value.setValid(false);
                 }
             }
         }
-        removeUnValidSigns();
+        removeUnValidCharacters();
 
     }
 
-    public void removeSign(Sign sign) {
-        if (sign.getCountAtom() != sign.getCountSign()) {
-            throw new RuntimeException("sign " + sign + " is part of other sign and cannot be deleted");
+    public void removeChar(Char c) {
+        if (c.getCountAtom() != c.getCountRoot()) {
+            throw new RuntimeException("character " + c + " is part of other character and cannot be deleted");
         }
-        sign.reduceCountAtom(sign.getCountSign());
-        signs.remove(sign.key);
+        c.reduceCountAtom(c.getCountRoot());
+        chars.remove(c.key);
+        mapper.remove(c.key);
 
     }
 

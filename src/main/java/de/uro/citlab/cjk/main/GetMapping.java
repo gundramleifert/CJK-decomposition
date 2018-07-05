@@ -47,17 +47,17 @@ public class GetMapping {
             for (File listFile : listFiles) {
                 List<String> readLines = FileUtil.readLines(listFile);
                 for (String readLine : readLines) {
-                    for (char sign : readLine.toCharArray()) {
-                        oc.add(sign);
+                    for (char c : readLine.toCharArray()) {
+                        oc.add(c);
                         ///////////////////
-                        /// count signs ///
+                        /// count chars ///
                         ///////////////////
-                        dec.count(String.valueOf(sign));
+                        dec.count(String.valueOf(c));
                     }
                 }
             }
 
-            System.out.println("number distinct signs in text: " + oc.getMap().size());
+            System.out.println("number distinct characters in text: " + oc.getMap().size());
             ////////////////////////////////
             /// prune decomposition tree ///
             ////////////////////////////////
@@ -66,8 +66,6 @@ public class GetMapping {
             DecomposerUtil.saveCharSet(dec, new File(folder, "leaves_after.txt"), true);
             DecomposerUtil.saveMap(dec, new File(folder, "map_after.txt"), true, true);
 
-//            boolean consistentWithoutFormatSigns = DecomposerUtil.isConsistentWithoutFormatSigns(dec);
-//            System.out.println("is consistent with lower format: " + consistentWithoutFormatSigns);
             //show some stuff
             try {
                 List<Double> xs = reduceDecomposer.get("size");

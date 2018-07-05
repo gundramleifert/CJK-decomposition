@@ -5,12 +5,11 @@
  */
 package de.uro.citlab.cjk.util;
 
-import de.uro.citlab.cjk.types.Sign;
+import de.uro.citlab.cjk.types.Char;
 import de.uro.citlab.cjk.Decomposer;
 import eu.transkribus.errorrate.util.ObjectCounter;
 import java.io.File;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -31,17 +30,17 @@ public class DecomposerUtil {
 
     private static Logger LOG = LoggerFactory.getLogger(DecomposerUtil.class);
 
-    public static final Set<Character> IdeographicDescriptionCharacters;
-    public static final Set<Character> StrokeCountCharacters;
+    public static final Set<Character> IDEOGRAPHIC_DESCRIPTION_CHARACTERS;
+    public static final Set<Character> STROKE_COUNT_CHARACTERS;
 
     static {
-        IdeographicDescriptionCharacters = new HashSet<>();
+        IDEOGRAPHIC_DESCRIPTION_CHARACTERS = new HashSet<>();
         for (char c = '\u2FF0'; c < '\u2FFC'; c++) {
-            IdeographicDescriptionCharacters.add(c);
+            IDEOGRAPHIC_DESCRIPTION_CHARACTERS.add(c);
         }
-        StrokeCountCharacters = new HashSet<>();
+        STROKE_COUNT_CHARACTERS = new HashSet<>();
         for (char c = '\u2460'; c < '\u2474'; c++) {
-            StrokeCountCharacters.add(c);
+            STROKE_COUNT_CHARACTERS.add(c);
         }
     }
 
@@ -50,7 +49,7 @@ public class DecomposerUtil {
     }
 
     public static boolean isIDC(char c) {
-        return IdeographicDescriptionCharacters.contains(c);
+        return IDEOGRAPHIC_DESCRIPTION_CHARACTERS.contains(c);
     }
 
     public static boolean isStrokeC(String s) {
@@ -58,14 +57,14 @@ public class DecomposerUtil {
     }
 
     public static boolean isStrokeC(char c) {
-        return StrokeCountCharacters.contains(c);
+        return STROKE_COUNT_CHARACTERS.contains(c);
     }
 
-    public static boolean isIDCSign(Sign sign) {
-        return isIDC(sign.value);
+    public static boolean isIDChar(Char c) {
+        return isIDC(c.value);
     }
 
-    public static boolean hasStrokeSigns(String decomposed) {
+    public static boolean hasStrokeCharacter(String decomposed) {
         for (char c : decomposed.toCharArray()) {
             if (DecomposerUtil.isStrokeC(c)) {
                 return true;
@@ -86,9 +85,9 @@ public class DecomposerUtil {
 
     public static ObjectCounter<Integer> getLengthDistribution(Decomposer composer) {
         ObjectCounter<Integer> res = new ObjectCounter<>();
-        for (Sign sign : composer.signs.values()) {
-            if (sign.getCountSign() > 0) {
-                res.add(sign.getLength(), sign.getCountSign());
+        for (Char c : composer.chars.values()) {
+            if (c.getCountRoot() > 0) {
+                res.add(c.getLength(), c.getCountRoot());
             }
         }
         return res;
@@ -96,17 +95,16 @@ public class DecomposerUtil {
 
     public static void saveCharSet(Decomposer dec, File outFile, boolean onlyWithCounts) {
         List<String> out = new LinkedList<>();
-        List<Sign> charSet = new LinkedList<>(DecomposerUtil.getCharSet(dec));
+        List<Char> charSet = new LinkedList<>(DecomposerUtil.getCharSet(dec));
         if (onlyWithCounts) {
             charSet.removeIf((t) -> {
                 return t.getCountAtom() <= 0 || t.getLength() < 1;
             });
         }
-        charSet.sort((Sign o1, Sign o2) -> o2.getCountAtom() - o1.getCountAtom());
-        for (Sign sign : charSet) {
+        charSet.sort((Char o1, Char o2) -> o2.getCountAtom() - o1.getCountAtom());
+        for (Char c : charSet) {
             try {
-//                out.add(sign.toString() + " = (len=" + length + ") " + dec.decompose(sign.unicode));
-                out.add(String.format("%-50s '%s'=>'%s'", sign, DecomposerUtil.getAsString(sign.getDec()), DecomposerUtil.getAsString(sign.getAtoms())));
+                out.add(String.format("%-50s '%s'=>'%s'", c, DecomposerUtil.getAsString(c.getDec()), DecomposerUtil.getAsString(c.getAtoms())));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -118,7 +116,7 @@ public class DecomposerUtil {
 
     public static void saveMap(Decomposer dec, File outFile, boolean onlyWithCounts, boolean raw) {
         List<String> out = new LinkedList<>();
-        List<Sign> values = new LinkedList<>(dec.signs.values());
+        List<Char> values = new LinkedList<>(dec.chars.values());
         if (onlyWithCounts) {
             values.removeIf((t) -> {
                 return t.getCountAtom() <= 0;
@@ -127,14 +125,12 @@ public class DecomposerUtil {
         values.sort((o1, o2) -> {
             return o2.getCountAtom() - o1.getCountAtom();
         });
-        for (Sign sign : values) {
+        for (Char c : values) {
             try {
                 if (raw) {
-                    out.add(String.format("%s\t%s\t%s", sign.value, DecomposerUtil.getAsString(sign.getDec()), DecomposerUtil.getAsString(sign.getAtoms())));
-
+                    out.add(String.format("%s\t%s\t%s", c.value, DecomposerUtil.getAsString(c.getDec()), DecomposerUtil.getAsString(c.getAtoms())));
                 } else {
-//                out.add(sign.toString() + " = (len=" + length + ") " + dec.decompose(sign.unicode));
-                    out.add(String.format("%-50s '%-10s'=>'%s'", sign, DecomposerUtil.getAsString(sign.getDec()), DecomposerUtil.getAsString(sign.getAtoms())));
+                    out.add(String.format("%-50s '%-10s'=>'%s'", c, DecomposerUtil.getAsString(c.getDec()), DecomposerUtil.getAsString(c.getAtoms())));
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -161,10 +157,10 @@ public class DecomposerUtil {
     }
 
     private static void recalcLength(Decomposer dec) {
-        for (Sign value : dec.signs.values()) {
+        for (Char value : dec.chars.values()) {
             value.resetLength();
         }
-        for (Sign value : dec.signs.values()) {
+        for (Char value : dec.chars.values()) {
             value.getLength();
         }
     }
@@ -175,7 +171,7 @@ public class DecomposerUtil {
         listList.put("max impact", new LinkedList<>());
         listList.put("max length", new LinkedList<>());
         listList.put("same occurace", new LinkedList<>());
-        listList.put("ambiguous signs", new LinkedList<>());
+        listList.put("ambiguous characters", new LinkedList<>());
 //        List<Double> sizeList = new LinkedList<>();
 //        List<Double> lengthList = new LinkedList<>();
 //        List<Double> lengthList2 = new LinkedList<>();
@@ -190,7 +186,7 @@ public class DecomposerUtil {
             listList.get("max impact").add(newLength);
             listList.get("max length").add(Double.NaN);
             listList.get("same occurace").add(Double.NaN);
-            listList.get("ambiguous signs").add(Double.NaN);
+            listList.get("ambiguous characters").add(Double.NaN);
         }
         while (reduceMaxImprovement(dec, relImprovement) != null) {
             int size = getCharSet(dec).size();
@@ -203,11 +199,11 @@ public class DecomposerUtil {
             listList.get("max impact").add(newLength);
             listList.get("max length").add(Double.NaN);
             listList.get("same occurace").add(Double.NaN);
-            listList.get("ambiguous signs").add(Double.NaN);
+            listList.get("ambiguous characters").add(Double.NaN);
             length = newLength;
             idx++;
         }
-        LOG.debug("substituting signs longer than {}...", maxLength);
+        LOG.debug("substituting characters longer than {}...", maxLength);
         while (reduceMaxLength(dec, maxLength) != null) {
             int size = getCharSet(dec).size();
             LOG.debug("leaves = {} distributionlength = {}", size, getLengthDistribution(dec));
@@ -216,9 +212,9 @@ public class DecomposerUtil {
             listList.get("max impact").add(Double.NaN);
             listList.get("max length").add(newLength);
             listList.get("same occurace").add(Double.NaN);
-            listList.get("ambiguous signs").add(Double.NaN);
+            listList.get("ambiguous characters").add(Double.NaN);
         }
-        LOG.debug("substituting leaves that are only part of one sign .", maxLength);
+        LOG.debug("substituting leaves that are only part of one character .", maxLength);
         while (reduceSubstituteLeaf(dec) != null) {
             int size = getCharSet(dec).size();
             LOG.debug("leaves = {} distributionlength = {}", size, getLengthDistribution(dec));
@@ -227,11 +223,11 @@ public class DecomposerUtil {
             listList.get("max impact").add(Double.NaN);
             listList.get("max length").add(Double.NaN);
             listList.get("same occurace").add(newLength);
-            listList.get("ambiguous signs").add(Double.NaN);
+            listList.get("ambiguous characters").add(Double.NaN);
         }
 
-        LOG.debug("substituting ambiguous signs...", maxLength);
-        while (reduceSolveAmbiguousSigns(dec) != null) {
+        LOG.debug("substituting ambiguous characters...", maxLength);
+        while (reduceSolveAmbiguousChars(dec) != null) {
             int size = getCharSet(dec).size();
             LOG.debug("leaves = {} distributionlength = {}", size, DecomposerUtil.getLengthDistribution(dec));
             double newLength = DecomposerUtil.getAvgLength(dec);
@@ -239,7 +235,7 @@ public class DecomposerUtil {
             listList.get("max impact").add(Double.NaN);
             listList.get("max length").add(Double.NaN);
             listList.get("same occurace").add(Double.NaN);
-            listList.get("ambiguous signs").add(newLength);
+            listList.get("ambiguous characters").add(newLength);
         }
 
 //        plot.add(toArray(runList));
@@ -258,9 +254,9 @@ public class DecomposerUtil {
         return res;
     }
 
-    public static Set<Sign> getCharSet(Decomposer composer) {
-        HashSet<Sign> res = new LinkedHashSet<>();
-        for (Sign object : composer.signs.values()) {
+    public static Set<Char> getCharSet(Decomposer composer) {
+        HashSet<Char> res = new LinkedHashSet<>();
+        for (Char object : composer.chars.values()) {
             if (object.isLeaf() && object.getCountAtom() > 0) {
                 res.add(object);
             }
@@ -268,27 +264,27 @@ public class DecomposerUtil {
         return res;
     }
 
-    private static Pair<Double, Sign> getbestReductionWithMaxLength(Sign sign, int maxLength) {
-        int length = sign.getLength();
+    private static Pair<Double, Char> getbestReductionWithMaxLength(Char c, int maxLength) {
+        int length = c.getLength();
         if (length < 0 || maxLength <= 1) {
-            return new Pair<>(-1.0, sign);
+            return new Pair<>(-1.0, c);
         }
-        List<Pair<Double, Sign>> candidates = new LinkedList<>();
-        if (sign.isValid()) {
-            candidates.add(new Pair<>(1.0 * sign.getCountAtom() * (length - 1), sign));
+        List<Pair<Double, Char>> candidates = new LinkedList<>();
+        if (c.isValid()) {
+            candidates.add(new Pair<>(1.0 * c.getCountAtom() * (length - 1), c));
         }
-        List<Sign> decFlat = sign.getDecFlat();
-        if (sign.isLeaf()) {
+        List<Char> decFlat = c.getDecFlat();
+        if (c.isLeaf()) {
             return candidates.get(0);
         }
         List<Integer> lengthPart = new LinkedList<>();
         int sum = 0;
-        for (Sign sign1 : decFlat) {
-            if (!sign1.isValidDec()) {
+        for (Char c1 : decFlat) {
+            if (!c1.isValidDec()) {
                 return candidates.get(0);
             }
-            sum += sign1.getLength();
-            lengthPart.add(sign1.getLength());
+            sum += c1.getLength();
+            lengthPart.add(c1.getLength());
         }
         for (int i = 0; i < decFlat.size(); i++) {
             candidates.add(getbestReductionWithMaxLength(decFlat.get(i), maxLength - (sum - lengthPart.get(i))));
@@ -299,14 +295,13 @@ public class DecomposerUtil {
         return candidates.get(0);
     }
 
-    public static Sign reduceSubstituteLeaf(Decomposer composer) {
-        for (Sign parent : composer.signs.values()) {
+    public static Char reduceSubstituteLeaf(Decomposer composer) {
+        for (Char parent : composer.chars.values()) {
             if (parent.isLeaf() || parent.getCountAtom() == 0) {
                 continue;
             }
-            List<Sign> dec = parent.getDec();
-//            Sign child = null;
-            for (Sign child : dec) {
+            List<Char> dec = parent.getDec();
+            for (Char child : dec) {
                 if (parent.getCountAtom() == child.getCountAtom() && parent.isValid()) {
                     LOG.debug("child {} can be substituted by parent {}", child, parent);
                     parent.setLeaf();
@@ -317,9 +312,9 @@ public class DecomposerUtil {
         return null;
     }
 
-    public static String reduceSolveAmbiguousSigns(Decomposer composer) {
-        HashMap<String, Sign> ret = new LinkedHashMap<>();
-        for (Sign parent2 : composer.signs.values()) {
+    public static String reduceSolveAmbiguousChars(Decomposer composer) {
+        HashMap<String, Char> ret = new LinkedHashMap<>();
+        for (Char parent2 : composer.chars.values()) {
             if (parent2.getCountAtom() == 0) {
                 continue;
             }
@@ -328,9 +323,9 @@ public class DecomposerUtil {
                 continue;
             }
             if (ret.containsKey(key)) {
-                Sign parent1 = ret.get(key);
+                Char parent1 = ret.get(key);
                 if (parent1.isValid() && parent2.isValid()) {
-                    LOG.debug("for key '{}' with length {} make both signs to leaves {} and {}", key, key.length(), parent1, parent2);
+                    LOG.debug("for key '{}' with length {} make both characters to leaves {} and {}", key, key.length(), parent1, parent2);
                     parent1.setLeaf();
                     parent2.setLeaf();
                     return key;
@@ -341,73 +336,72 @@ public class DecomposerUtil {
         return null;
     }
 
-    public static Sign reduceMaxLength(Decomposer composer, int maxLength) {
-        LinkedList<Sign> signs = new LinkedList<>(composer.signs.values());
+    public static Char reduceMaxLength(Decomposer composer, int maxLength) {
+        LinkedList<Char> characters = new LinkedList<>(composer.chars.values());
 
-        while (signs.removeIf(item -> item.getLength() <= maxLength || item.getCountAtom() == 0 || !item.isValidDec())) {
-            signs.sort((o1, o2) -> {
+        while (characters.removeIf(item -> item.getLength() <= maxLength || item.getCountAtom() == 0 || !item.isValidDec())) {
+            characters.sort((o1, o2) -> {
                 return Integer.compare(o2.getLength(), o1.getLength());
             });
         }
-        if (signs.isEmpty()) {
+        if (characters.isEmpty()) {
             return null;
         }
-        LOG.debug("try to reduce sign " + signs.get(0) + " to max length " + maxLength);
-//        for (Sign sign : signs) {
-        Pair<Double, Sign> best = getbestReductionWithMaxLength(signs.get(0), maxLength);
+        LOG.debug("try to reduce character " + characters.get(0) + " to max length " + maxLength);
+        Pair<Double, Char> best = getbestReductionWithMaxLength(characters.get(0), maxLength);
         if (best.getFirst() == 0.0) {
-            best = getbestReductionWithMaxLength(signs.get(0), maxLength);
-            throw new RuntimeException("sign " + best.getSecond() + " cannot be reduced to maximal length " + maxLength);
+            best = getbestReductionWithMaxLength(characters.get(0), maxLength);
+            throw new RuntimeException("character " + best.getSecond() + " cannot be reduced to maximal length " + maxLength);
         }
-        Sign newLeaf = best.getSecond();
+        Char newLeaf = best.getSecond();
         best.getSecond().setLeaf();
         recalcLength(composer);
-        LOG.debug("sign '" + newLeaf + "' with score " + best.getFirst() + " is new leaf and reduces sign " + signs.get(0) + " to length " + signs.get(0).getLength());
+        LOG.debug("character '" + newLeaf + "' with score " + best.getFirst() + " is new leaf and reduces character " + characters.get(0) + " to length " + characters.get(0).getLength());
         return newLeaf;
 //        }
     }
 
-    public static Sign reduceMaxImprovement(Decomposer composer, double minimalImprovement) {
+    public static Char reduceMaxImprovement(Decomposer composer, double minimalImprovement) {
         double sumLength = getSumAndCount(composer)[0];
-        LinkedList<Sign> signs = new LinkedList<>(composer.signs.values());
-        signs.removeIf((t) -> {
+        LinkedList<Char> chars = new LinkedList<>(composer.chars.values());
+        chars.removeIf((t) -> {
             return t.isLeaf() || !t.isValid();
         });
-        if (signs.isEmpty()) {
+        if (chars.isEmpty()) {
             return null;
         }
-        Collections.sort(signs);
+        Collections.sort(chars);
         int idx = 0;
-        while (idx < signs.size() && signs.get(idx).isLeaf() && signs.get(idx).isValid()) {
+        while (idx < chars.size() && chars.get(idx).isLeaf() && chars.get(idx).isValid()) {
             idx++;
         }
-        Sign newLeave = signs.get(idx);
+        Char newLeave = chars.get(idx);
         double score = newLeave.getScore();
         if ((sumLength - score) / sumLength > 1 - minimalImprovement) {
             return null;
         }
         newLeave.setLeaf();
         recalcLength(composer);
-        LOG.debug("sign '" + newLeave + "' with score " + score + " is new leaf");
+        LOG.debug("character '" + newLeave + "' with score " + score + " is new leaf");
         return newLeave;
     }
 
-    public static void removeSign(Decomposer dec, Sign sign) {
-        if (sign.getCountAtom() != sign.getCountSign()) {
-            throw new RuntimeException("sign " + sign + " is part of other sign and cannot be deleted");
+    public static void removeChar(Decomposer dec, Char c) {
+        if (c.getCountAtom() != c.getCountRoot()) {
+            throw new RuntimeException("character " + c + " is part of other characters and cannot be deleted");
         }
-        sign.reduceCountAtom(sign.getCountSign());
-        dec.signs.remove(sign.key);
+        c.reduceCountAtom(c.getCountRoot());
+        dec.chars.remove(c.key);
 
     }
 
-    public static String getAsString(List<Sign> list) {
+    public static String getAsString(List<Char> list) {
         StringBuilder sb = new StringBuilder();
         if (list == null) {
             return null;
         }
-        for (Sign sign : list) {
-            sb.append(sign.value);
+        for (Char c : list) {
+            sb.append(c.value);
         }
         return sb.toString();
     }
