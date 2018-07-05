@@ -91,7 +91,12 @@ public class GetMapping {
                     String str = new String(IOUtils.toByteArray(this.getClass().getClassLoader().getResourceAsStream("dummy.txt")));
                     for (char c : str.toCharArray()) {
                         oc.add(c);
+                        ///////////////////
+                        /// count chars ///
+                        ///////////////////
+                        dec.count(String.valueOf(c));
                     }
+                    System.out.println(oc);
                 } else {
                     List<File> listFiles = FileUtil.listFiles(new File(cmd.getOptionValue('i')), "txt", true);
                     for (File listFile : listFiles) {
@@ -108,6 +113,9 @@ public class GetMapping {
                     }
                 }
 
+                if (oc.getMap().isEmpty()) {
+                    help("no text file found or loaded");
+                }
                 System.out.println("number distinct characters in text: " + oc.getMap().size());
                 ////////////////////////////////
                 /// prune decomposition tree ///
