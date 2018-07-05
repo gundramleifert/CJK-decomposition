@@ -9,11 +9,17 @@ import de.uro.citlab.cjk.Decomposer;
 import de.uro.citlab.cjk.util.DecomposerUtil;
 import de.uro.citlab.cjk.util.FileUtil;
 import de.uro.citlab.cjk.util.Gnuplot;
-import eu.transkribus.errorrate.util.ObjectCounter;
+import de.uro.citlab.cjk.util.ObjectCounter;
 import java.io.File;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,69 +30,139 @@ import org.slf4j.LoggerFactory;
 public class GetMapping {
 
     private static Logger LOG = LoggerFactory.getLogger(GetMapping.class);
+    private final Options options = new Options();
 
-    public static void main(String[] args) {
-        for (Decomposer.Coding coding : Decomposer.Coding.values()) {
-            File root = new File(".");
-            File folder = new File(root, coding.toString());
-            folder.mkdir();
+    public GetMapping() {
+        options.addOption("h", "help", false, "show this help");
+        options.addOption("r", "raw", false, "do not prune mapping");
+        options.addOption("u", "utf8", false, "only use valid utf-8 characters as leaf");
+        options.addOption("d", "idc", false, "delete ideographic description characters for decomposition");
+        options.addOption("o", "out-map", true, "path to save output file");
+        options.addOption("l", "out-leaves", true, "path to save character set to file");
+        options.addOption("i", "in-directory", true, "path directory with *.txt-files containing characters");
+        options.addOption("p", "plot", false, "plot reduction process");
+        options.addOption("m", "maxlength", true, "maximal length of decomposition (default: 11 (with -d: 9)");
+        options.addOption("g", "gain", true, "minimal gain for adding additional leaves (default: 0.005)");
+    }
+
+    public static void main(String[] args) throws IOException {
+        GetMapping mapping = new GetMapping();
+        mapping.run(args);
+    }
+
+    public void run(String[] args) throws IOException {
+        CommandLine cmd = null;
+        try {
+            cmd = new DefaultParser().parse(options, args);
+
+            //Help?
+            if (cmd.hasOption("h")) {
+                help();
+            }
+            Decomposer.Coding coding = null;
+            if (cmd.hasOption('u')) {
+                coding = cmd.hasOption('d') ? Decomposer.Coding.UTF8_IDC : Decomposer.Coding.UTF8;
+            } else {
+                coding = cmd.hasOption('d') ? Decomposer.Coding.IDC : Decomposer.Coding.ANY;
+            }
+            int maxlen = cmd.hasOption('m') ? Integer.parseInt(cmd.getOptionValue('m')) : cmd.hasOption('d') ? 7 : 11;
+            double gain = cmd.hasOption('g') ? Double.parseDouble(cmd.getOptionValue('g')) : 0.005;
+//            File root = new File(".");
+//            File folder = new File(root, coding.toString());
+//            folder.mkdir();
             /////////////////////////////
             /// create raw decomposer ///
             /////////////////////////////
             Decomposer dec = new Decomposer(coding);
-
-            //dump some stuff
-            DecomposerUtil.saveCharSet(dec, new File(folder, "leaves.txt"), true);
-            DecomposerUtil.saveMap(dec, new File(folder, "map.txt"), true, true);
-
-            /////////////////////////
-            /// minimize composer ///
-            /////////////////////////
-            List<File> listFiles = FileUtil.listFiles(new File(root, "docs"), "txt", true);
-            ObjectCounter<Character> oc = new ObjectCounter<>();
-            for (File listFile : listFiles) {
-                List<String> readLines = FileUtil.readLines(listFile);
-                for (String readLine : readLines) {
-                    for (char c : readLine.toCharArray()) {
-                        oc.add(c);
-                        ///////////////////
-                        /// count chars ///
-                        ///////////////////
-                        dec.count(String.valueOf(c));
+            if (!cmd.hasOption('r')) {
+                if (!cmd.hasOption('i')) {
+                    help("if -r is not set, option -i have to be set.");
+                }
+                //dump some stuff
+//            DecomposerUtil.saveCharSet(dec, new File(folder, "leaves.txt"), true);
+//            DecomposerUtil.saveMap(dec, new File(folder, "map.txt"), true, true);
+                /////////////////////////
+                /// minimize composer ///
+                /////////////////////////
+                List<File> listFiles = FileUtil.listFiles(new File(cmd.getOptionValue('i')), "txt", true);
+                ObjectCounter<Character> oc = new ObjectCounter<>();
+                for (File listFile : listFiles) {
+                    List<String> readLines = FileUtil.readLines(listFile);
+                    for (String readLine : readLines) {
+                        for (char c : readLine.toCharArray()) {
+                            oc.add(c);
+                            ///////////////////
+                            /// count chars ///
+                            ///////////////////
+                            dec.count(String.valueOf(c));
+                        }
                     }
                 }
-            }
 
-            System.out.println("number distinct characters in text: " + oc.getMap().size());
-            ////////////////////////////////
-            /// prune decomposition tree ///
-            ////////////////////////////////
-            Map<String, List<Double>> reduceDecomposer = DecomposerUtil.reduceDecomposer(dec, 0.005, coding.toString().endsWith("IDC") ? 7 : 11);
-            //dump some stuff
-            DecomposerUtil.saveCharSet(dec, new File(folder, "leaves_after.txt"), true);
-            DecomposerUtil.saveMap(dec, new File(folder, "map_after.txt"), true, true);
+                System.out.println("number distinct characters in text: " + oc.getMap().size());
+                ////////////////////////////////
+                /// prune decomposition tree ///
+                ////////////////////////////////
+                Map<String, List<Double>> reduceDecomposer = DecomposerUtil.reduceDecomposer(dec, gain, maxlen);
+//dump some stuff
 
-            //show some stuff
-            try {
-                List<Double> xs = reduceDecomposer.get("size");
-                reduceDecomposer.remove("size");
-                List<double[]> ys = new LinkedList<>();
-                String[] names = new String[reduceDecomposer.size()];
-                int idx = 0;
-                for (String name : reduceDecomposer.keySet()) {
-                    names[idx++] = name;
-                    ys.add(DecomposerUtil.toArray(reduceDecomposer.get(name)));
+                //show some stuff
+                try {
+                    List<Double> xs = reduceDecomposer.get("size");
+                    reduceDecomposer.remove("size");
+                    List<double[]> ys = new LinkedList<>();
+                    String[] names = new String[reduceDecomposer.size()];
+                    int idx = 0;
+                    for (String name : reduceDecomposer.keySet()) {
+                        names[idx++] = name;
+                        ys.add(DecomposerUtil.toArray(reduceDecomposer.get(name)));
+                    }
+                    Gnuplot.withGrid = true;
+                    Gnuplot.plot(DecomposerUtil.toArray(xs), ys, "CharSet size compared to average decomposition length", names, null);
+
+                } catch (Throwable ex) {
+                    LOG.warn("GNUplot not installed correctly (or windows is used) - skip display", ex);
+                    System.out.println("GNUplot not installed correctly (or windows is used) - skip display");
                 }
-                Gnuplot.withGrid = true;
-                Gnuplot.plot(DecomposerUtil.toArray(xs), ys, "CharSet size compared to average decomposition length", names, null);
-
-            } catch (Throwable ex) {
-                LOG.warn("GNUplot not installed correctly (or windows is used) - skip display", ex);
-                System.out.println("GNUplot not installed correctly (or windows is used) - skip display");
+            }
+            if (cmd.hasOption('l')) {
+                DecomposerUtil.saveCharSet(dec, new File(cmd.getOptionValue('l')), true);
+            }
+            if (cmd.hasOption('o')) {
+                DecomposerUtil.saveMap(dec, new File(cmd.getOptionValue('o')), true, true);
             }
 //        System.out.println((int) '土');
 //        System.out.println((int) '士');
+        } catch (ParseException ex) {
+            help("Failed to parse comand line properties", ex);
         }
+    }
+
+    private void help() {
+        help(null, null);
+    }
+
+    private void help(String suffix) {
+        help(suffix, null);
+    }
+
+    private void help(String suffix, Throwable e) {
+        // This prints out some help
+        if (suffix != null && !suffix.isEmpty()) {
+            suffix = "ERROR:\n" + suffix;
+            if (e != null) {
+                suffix += "\n" + e.getMessage();
+            }
+        }
+        HelpFormatter formater = new HelpFormatter();
+        formater.printHelp(
+                "java -jar CJK-decomposition.jar",
+                "This method can be used to create a mapping to decompose chinese, japanese (Kanji) or Korean (Janja) characters into simpler parts",
+                options,
+                suffix,
+                true
+        );
+        System.exit(0);
     }
 
 }

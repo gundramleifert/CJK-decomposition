@@ -7,7 +7,6 @@ package de.uro.citlab.cjk.util;
 
 import de.uro.citlab.cjk.types.Char;
 import de.uro.citlab.cjk.Decomposer;
-import eu.transkribus.errorrate.util.ObjectCounter;
 import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;

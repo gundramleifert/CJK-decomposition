@@ -11,6 +11,7 @@ As decomposition basis we use the 'ids.txt', which is a copy of https://github.c
 git clone https://github.com/gundramleifert/CJK-decomposition.git
 cd CJK-decomposition
 mvn install
+java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar --help
 ```
 # Dependencies
 * git

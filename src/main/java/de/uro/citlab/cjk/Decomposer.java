@@ -4,9 +4,9 @@ import de.uro.citlab.cjk.util.DecomposerUtil;
 import de.uro.citlab.cjk.util.Gnuplot;
 import de.uro.citlab.cjk.util.FileUtil;
 import de.uro.citlab.cjk.types.Char;
-import eu.transkribus.errorrate.util.ObjectCounter;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,17 +74,18 @@ public class Decomposer {
         UTF8_IDC,
     }
 
-    public Decomposer(Coding coding) {
+    public Decomposer(Coding coding) throws IOException {
         this.coding = coding;
         ClassLoader classLoader = Decomposer.class.getClassLoader();
-        File f = new File(classLoader.getResource("CJK/ids.txt").getFile());
-        List<String> strings = FileUtil.readLines(f);
+//        System.out.println(classLoader.getResource("ids.txt").getFile());
+        File f = new File(classLoader.getResource("ids.txt").getFile());
+        String[] file = new String(IOUtils.toByteArray(this.getClass().getClassLoader().getResourceAsStream("ids.txt"))).split("\n");
+//        List<String> strings = FileUtil.readLines(f);
         //remove both rows at the beginning
-        strings.remove(0);
-        strings.remove(0);
         int cntErrorDecompose = 0;
         //for each line, create an entry
-        for (String string : strings) {
+        for (int i = 2; i < file.length; i++) {
+            String string = file[i];
             String[] split = string.split("\t");
             int idx = Integer.parseInt(split[0].substring(2), 16);
             mapper.add(idx, split[1]);
