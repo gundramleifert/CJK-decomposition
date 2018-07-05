@@ -21,18 +21,18 @@ This method can only work for a given text resource, for which we can optimize t
 
 - for a given text resource count the number of occurance of all signs and recursively all decomposition parts
 - do: (reduce average length)
- - for each sign we calculate 'count*(length-1)' which is a score for how much it would reduce the text decomposition length.
- - we define the sign with maximal score as new leaf.
- - repeat until the reduction gained by a new leaf is too small.
+-- for each sign we calculate 'count*(length-1)' which is a score for how much it would reduce the text decomposition length.
+-- we define the sign with maximal score as new leaf.
+-- repeat until the reduction gained by a new leaf is too small.
 - do: (reduce length of all decompositions to a maximal value)
- - find root-sign which occures in the text resource with the largest decomposition length
- - find all sign in decomposition tree that makes length of the root-sign <= maximal value
- - we define the sign with maximal 'count*(length-1)' as new leaf
- - repeat until each root-sign has a decomposition <= maximal value
+-- find root-sign which occures in the text resource with the largest decomposition length
+-- find all sign in decomposition tree that makes length of the root-sign <= maximal value
+-- we define the sign with maximal 'count*(length-1)' as new leaf
+-- repeat until each root-sign has a decomposition <= maximal value
 - do: (make decomposition -> root-sign distinct)
- - find sign-pairs which have the same decomposition
- - make both signs to leaves
- - repeat until no more sign-pairs are found
+-- find sign-pairs which have the same decomposition
+-- make both signs to leaves
+-- repeat until no more sign-pairs are found
 
 ## Decomposition variants
 there are 2 variant how a decomposition can be done:
