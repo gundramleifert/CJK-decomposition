@@ -41,7 +41,7 @@ public class GetMapping {
         options.addOption("d", "idc", false, "delete ideographic description characters for decomposition");
         options.addOption("o", "out-map", true, "path to save output file");
         options.addOption("l", "out-leaves", true, "path to save character set to file");
-        options.addOption("i", "in-directory", true, "path directory with *.txt-files containing characters");
+        options.addOption("i", "in-directory", true, "path directory with *.txt-files containing characters (set '-i ?  to use internal dummy-file)");
         options.addOption("p", "plot", false, "plot reduction process");
         options.addOption("m", "maxlength", true, "maximal length of decomposition (default: 11 (with -d: 9)");
         options.addOption("g", "gain", true, "minimal gain for adding additional leaves (default: 0.005)");
@@ -78,7 +78,7 @@ public class GetMapping {
             Decomposer dec = new Decomposer(coding);
             if (!cmd.hasOption('r')) {
                 if (!cmd.hasOption('i')) {
-                    help("if -r is not set, option -i have to be set. (set '-i ?' to load example file)");
+                    help("if -r is not set, option -i have to be set. (set '-i ? to use internal dummy-file)");
                 }
                 //dump some stuff
 //            DecomposerUtil.saveCharSet(dec, new File(folder, "leaves.txt"), true);
