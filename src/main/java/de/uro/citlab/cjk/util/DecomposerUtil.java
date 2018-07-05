@@ -9,6 +9,7 @@ import de.uro.citlab.cjk.types.Sign;
 import de.uro.citlab.cjk.Decomposer;
 import eu.transkribus.errorrate.util.ObjectCounter;
 import java.io.File;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.commons.math3.util.Pair;
 import org.slf4j.Logger;
@@ -144,13 +146,18 @@ public class DecomposerUtil {
     }
 
     public static double getAvgLength(Decomposer composer) {
+        int[] sumAndCount = getSumAndCount(composer);
+        return ((double) sumAndCount[0]) / sumAndCount[1];
+    }
+
+    private static int[] getSumAndCount(Decomposer dec) {
         int sum = 0, count = 0;
-        ObjectCounter<Integer> lengthDistribution = getLengthDistribution(composer);
+        ObjectCounter<Integer> lengthDistribution = getLengthDistribution(dec);
         for (Pair<Integer, Long> pair : lengthDistribution.getResultOccurrence()) {
             sum += pair.getFirst() * pair.getSecond();
             count += pair.getSecond();
         }
-        return ((double) sum) / count;
+        return new int[]{sum, count};
     }
 
     private static void recalcLength(Decomposer dec) {
@@ -162,72 +169,88 @@ public class DecomposerUtil {
         }
     }
 
-    public static List<double[]> reduceDecomposer(Decomposer dec, double relImprovement, int maxLength) {
-        List<double[]> plot = new LinkedList<>();
-        List<Double> sizeList = new LinkedList<>();
-        List<Double> lengthList = new LinkedList<>();
-        List<Double> lengthList2 = new LinkedList<>();
-        LOG.debug("average length {}", DecomposerUtil.getAvgLength(dec));
+    public static Map<String, List<Double>> reduceDecomposer(Decomposer dec, double relImprovement, int maxLength) {
+        Map<String, List<Double>> listList = new LinkedHashMap<>();
+        listList.put("size", new LinkedList<>());
+        listList.put("max impact", new LinkedList<>());
+        listList.put("max length", new LinkedList<>());
+        listList.put("same occurace", new LinkedList<>());
+        listList.put("ambiguous signs", new LinkedList<>());
+//        List<Double> sizeList = new LinkedList<>();
+//        List<Double> lengthList = new LinkedList<>();
+//        List<Double> lengthList2 = new LinkedList<>();
         double length = DecomposerUtil.getAvgLength(dec);
+        LOG.debug("average length {}", length);
         double firstlength = length;
-        int sizeStart = getCharSet(dec).size();
         int idx = 1;
-        while (true) {
-            int size = getCharSet(dec).size();
-            LOG.debug("leaves = {} distributionlength = {}", size, DecomposerUtil.getLengthDistribution(dec));
-            DecomposerUtil.insertLeaf(dec, true, true);
+        {
             double newLength = DecomposerUtil.getAvgLength(dec);
+            int sizeStart = getCharSet(dec).size();
+            listList.get("size").add((double) sizeStart);
+            listList.get("max impact").add(newLength);
+            listList.get("max length").add(Double.NaN);
+            listList.get("same occurace").add(Double.NaN);
+            listList.get("ambiguous signs").add(Double.NaN);
+        }
+        while (reduceMaxImprovement(dec, relImprovement) != null) {
+            int size = getCharSet(dec).size();
+            LOG.debug("leaves = {} distributionlength = {}", size, getLengthDistribution(dec));
+            double newLength = getAvgLength(dec);
             if (LOG.isTraceEnabled()) {
-                LOG.trace(String.format("%2d: %.2f %.4f%% %.4f%%", idx, newLength, (length / newLength - 1) * 100, (newLength / firstlength) * 100));
+                LOG.trace(String.format("%2d: %.2f %.4f%% %.4f%%", idx++, newLength, (length / newLength - 1) * 100, (newLength / firstlength) * 100));
             }//            runList.add((double) i);
-            sizeList.add((double) size / sizeStart);
-            lengthList.add(newLength);
-            lengthList2.add(newLength);
-            if (length / newLength < 1 + relImprovement) {
-                length = newLength;
-                break;
-            }
+            listList.get("size").add((double) size);
+            listList.get("max impact").add(newLength);
+            listList.get("max length").add(Double.NaN);
+            listList.get("same occurace").add(Double.NaN);
+            listList.get("ambiguous signs").add(Double.NaN);
             length = newLength;
             idx++;
         }
         LOG.debug("substituting signs longer than {}...", maxLength);
-        while (insertLeaf(dec, maxLength) != null) {
+        while (reduceMaxLength(dec, maxLength) != null) {
             int size = getCharSet(dec).size();
-            LOG.debug("leaves = {} distributionlength = {}", size, DecomposerUtil.getLengthDistribution(dec));
-            double newLength = DecomposerUtil.getAvgLength(dec);
-            sizeList.add((double) size / sizeStart);
-            lengthList.add(length);
-            lengthList2.add(newLength);
+            LOG.debug("leaves = {} distributionlength = {}", size, getLengthDistribution(dec));
+            double newLength = getAvgLength(dec);
+            listList.get("size").add((double) size);
+            listList.get("max impact").add(Double.NaN);
+            listList.get("max length").add(newLength);
+            listList.get("same occurace").add(Double.NaN);
+            listList.get("ambiguous signs").add(Double.NaN);
         }
         LOG.debug("substituting leaves that are only part of one sign .", maxLength);
-        while (substituteLeaf(dec) != null) {
+        while (reduceSubstituteLeaf(dec) != null) {
             int size = getCharSet(dec).size();
-            LOG.debug("leaves = {} distributionlength = {}", size, DecomposerUtil.getLengthDistribution(dec));
-            double newLength = DecomposerUtil.getAvgLength(dec);
-            sizeList.add((double) size / sizeStart);
-            lengthList.add(length);
-            lengthList2.add(newLength);
+            LOG.debug("leaves = {} distributionlength = {}", size, getLengthDistribution(dec));
+            double newLength = getAvgLength(dec);
+            listList.get("size").add((double) size);
+            listList.get("max impact").add(Double.NaN);
+            listList.get("max length").add(Double.NaN);
+            listList.get("same occurace").add(newLength);
+            listList.get("ambiguous signs").add(Double.NaN);
         }
 
         LOG.debug("substituting ambiguous signs...", maxLength);
-        while (substituteambiguousSigns(dec) != null) {
+        while (reduceSolveAmbiguousSigns(dec) != null) {
             int size = getCharSet(dec).size();
             LOG.debug("leaves = {} distributionlength = {}", size, DecomposerUtil.getLengthDistribution(dec));
             double newLength = DecomposerUtil.getAvgLength(dec);
-            sizeList.add((double) size / sizeStart);
-            lengthList.add(length);
-            lengthList2.add(newLength);
+            listList.get("size").add((double) size);
+            listList.get("max impact").add(Double.NaN);
+            listList.get("max length").add(Double.NaN);
+            listList.get("same occurace").add(Double.NaN);
+            listList.get("ambiguous signs").add(newLength);
         }
 
 //        plot.add(toArray(runList));
-        plot.add(toArray(sizeList));
-        plot.add(toArray(lengthList));
-        plot.add(toArray(lengthList2));
-        return plot;
+//        plot.add(toArray(sizeList));
+//        plot.add(toArray(lengthList));
+//        plot.add(toArray(lengthList2));
+        return listList;
 
     }
 
-    private static double[] toArray(List<Double> array) {
+    public static double[] toArray(List<Double> array) {
         double[] res = new double[array.size()];
         for (int i = 0; i < array.size(); i++) {
             res[i] = array.get(i);
@@ -276,25 +299,25 @@ public class DecomposerUtil {
         return candidates.get(0);
     }
 
-    public static Sign substituteLeaf(Decomposer composer) {
-        for (Sign value : composer.signs.values()) {
-            if (value.isLeaf()) {
+    public static Sign reduceSubstituteLeaf(Decomposer composer) {
+        for (Sign parent : composer.signs.values()) {
+            if (parent.isLeaf() || parent.getCountAtom() == 0) {
                 continue;
             }
-            List<Sign> dec = value.getDec();
+            List<Sign> dec = parent.getDec();
 //            Sign child = null;
-            for (Sign sign : dec) {
-                if (value.getCountAtom() == sign.getCountAtom()) {
-                    LOG.debug("child {} can be substituted by parent {}", sign, value);
-                    value.setLeaf();
-                    return value;
+            for (Sign child : dec) {
+                if (parent.getCountAtom() == child.getCountAtom() && parent.isValid()) {
+                    LOG.debug("child {} can be substituted by parent {}", child, parent);
+                    parent.setLeaf();
+                    return parent;
                 }
             }
         }
         return null;
     }
 
-    public static String substituteambiguousSigns(Decomposer composer) {
+    public static String reduceSolveAmbiguousSigns(Decomposer composer) {
         HashMap<String, Sign> ret = new LinkedHashMap<>();
         for (Sign parent2 : composer.signs.values()) {
             if (parent2.getCountAtom() == 0) {
@@ -318,7 +341,7 @@ public class DecomposerUtil {
         return null;
     }
 
-    public static Sign insertLeaf(Decomposer composer, int maxLength) {
+    public static Sign reduceMaxLength(Decomposer composer, int maxLength) {
         LinkedList<Sign> signs = new LinkedList<>(composer.signs.values());
 
         while (signs.removeIf(item -> item.getLength() <= maxLength || item.getCountAtom() == 0 || !item.isValidDec())) {
@@ -344,23 +367,25 @@ public class DecomposerUtil {
 //        }
     }
 
-    public static Sign insertLeaf(Decomposer composer, boolean mostAtoms, boolean onlyValid) {
+    public static Sign reduceMaxImprovement(Decomposer composer, double minimalImprovement) {
+        double sumLength = getSumAndCount(composer)[0];
         LinkedList<Sign> signs = new LinkedList<>(composer.signs.values());
-        signs.sort(new Comparator<Sign>() {
-            @Override
-            public int compare(Sign o1, Sign o2) {
-                if (mostAtoms) {
-                    return Integer.compare((o2.getLength() - 1) * o2.getCountAtom(), (o1.getLength() - 1) * o1.getCountAtom());
-                }
-                return Integer.compare((o2.getLength() - 1) * o2.getCountSign(), (o1.getLength() - 1) * o1.getCountSign());
-            }
+        signs.removeIf((t) -> {
+            return t.isLeaf() || !t.isValid();
         });
+        if (signs.isEmpty()) {
+            return null;
+        }
+        Collections.sort(signs);
         int idx = 0;
-        while (idx < signs.size() && signs.get(idx).isLeaf() && (!onlyValid || signs.get(idx).isValid())) {
+        while (idx < signs.size() && signs.get(idx).isLeaf() && signs.get(idx).isValid()) {
             idx++;
         }
         Sign newLeave = signs.get(idx);
-        double score = mostAtoms ? (newLeave.getLength() - 1) * newLeave.getCountAtom() : (newLeave.getLength() - 1) * newLeave.getCountSign();
+        double score = newLeave.getScore();
+        if ((sumLength - score) / sumLength > 1 - minimalImprovement) {
+            return null;
+        }
         newLeave.setLeaf();
         recalcLength(composer);
         LOG.debug("sign '" + newLeave + "' with score " + score + " is new leaf");

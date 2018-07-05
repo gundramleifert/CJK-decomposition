@@ -23,11 +23,7 @@ import javax.imageio.ImageIO;
 import org.apache.commons.math3.util.Pair;
 
 /**
- * Describtion of Gnuplot:
- *
- *
- * @author Tobias Strauß <tobias.strauss@uni-rostock.de>
- * since 05.01.2014
+ * @author Gundram Leifert <gundram.leifert@gmx.de.de>
  */
 public class Gnuplot {
 
@@ -286,13 +282,28 @@ public class Gnuplot {
                 xAxis[i] = i;
             }
         }
+        double min = getMinMax(xAxis).getFirst();
+        double max = getMinMax(xAxis).getSecond();
+        p.getAxis("x").setBoundaries(min - (max - min) * 0.01, max + (max - min) * 0.01);
         p.setTitle(title);
         p.setKey(key);
         for (int h = 0; h < yAxis.size(); h++) {
             double[] yY = yAxis.get(h);
-            double[][] points = new double[yY.length][];
+            int countNumbers = 0;
+            for (double d : yY) {
+                if (!Double.isNaN(d)) {
+                    countNumbers++;
+                }
+            }
+            if (countNumbers == 0) {
+                continue;
+            }
+            double[][] points = new double[countNumbers][];
+            countNumbers = 0;
             for (int i = 0; i < yY.length; i++) {
-                points[i] = new double[]{xAxis[i], yY[i]};
+                if (!Double.isNaN(yY[i])) {
+                    points[countNumbers++] = new double[]{xAxis[i], yY[i]};
+                }
             }
             DataSetPlot dsp = new DataSetPlot(points);
             if (result_names != null && result_names.length > h) {
@@ -304,61 +315,13 @@ public class Gnuplot {
             p.addPlot(dsp);
             plotcnt++;
             PlotStyle stl = ((AbstractPlot) p.getPlots().get(plotcnt)).getPlotStyle();
-            stl.setStyle(Style.LINES);
+            stl.setStyle(Style.LINESPOINTS);
+        }
+        if (withGrid) {
+            p.set("grid", "back lc black");
         }
 
         return p;
     }
-//    private static JavaPlot getJavaPlot(double[] xAxis, ArrayList<double[]> yAxis, String title, String[] result_names, double ymin, double ymax, JavaPlot.Key key) {
-//        int plotcnt = -1;
-//        JavaPlot p = new JavaPlot();
-//
-//        //p.set("xrange", "[-1.1:1.1]");
-//        //p.getAxis("x").setBoundaries(-1.1, 1.1);
-//        if (!Double.isNaN(ymin) && !Double.isNaN(ymax)) {
-//            p.set("yrange", "[" + ymin + ":" + ymax + "]");
-//            //p.getAxis("y").setBoundaries(-1.1, 1.1);
-//        }
-//        if (xAxis == null) {
-//            int size = 0;
-//            for (int i = 0; i < yAxis.size(); i++) {
-//                size = Math.max(size, yAxis.get(i).length);
-//            }
-//            xAxis = new double[size];
-//            for (int i = 0; i < xAxis.length; i++) {
-//                xAxis[i] = i;
-//            }
-//        }
-//        p.setTitle(title);
-//        p.setKey(key);
-//        for (int h = 0; h < yAxis.size(); h++) {
-//            double[] yY = yAxis.get(h);
-//            double[][] points = new double[yY.length][];
-//            for (int i = 0; i < yY.length; i++) {
-//                points[i] = new double[]{xAxis[i], yY[i]};
-//            }
-//            DataSetPlot dsp = new DataSetPlot(points);
-//            if (result_names != null && result_names.length > h) {
-//                dsp.setTitle(result_names[h]);
-//            } else {
-//                dsp.setTitle("Result " + h);
-//            }
-//
-//            p.addPlot(dsp);
-//            plotcnt++;
-//            PlotStyle stl = ((AbstractPlot) p.getPlots().get(plotcnt)).getPlotStyle();
-//            stl.setStyle(Style.LINES);
-//        }
-//
-//        //stl.setLineType(NamedPlotColor.BLUE);
-////        stl.setStyle(Style.POINTS);
-////        stl.setPointType(3); // nice stars
-////        stl.setPointSize(2);
-//        if (withGrid) {
-//            p.set("grid", "back ls 12");
-//        }
-//
-//        return p;
-//    }
 
 }

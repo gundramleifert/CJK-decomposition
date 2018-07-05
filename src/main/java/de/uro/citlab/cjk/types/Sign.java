@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author gundram
  */
-public class Sign {
+public class Sign implements Comparable<Sign> {
 
     public final String value;
     public final int key;
@@ -210,7 +210,7 @@ public class Sign {
 
     @Override
     public String toString() {
-        return String.format("[ U+%05X '%s' len=%2d/%2d (occurance=%4d/%4d) %b]", (int) key, value, getLength(), getLengthAtom(), countSign, countAtom, isValid());
+        return String.format("[ U+%05X '%s' len=%2d/%2d (occurance=%4d/%4d) leaf=%b valid=%b]", (int) key, value, getLength(), getLengthAtom(), countSign, countAtom, isLeaf(), isValid());
 //        try {
 //            return String.format("[ U+%05x '%s' len= %d(%d) cntSn=%d cntAt=%d '%s' '%s']", (int) number, unicode, getLength(), getLengthAtom(), countSign, countAtom, getDec(), getDecFlat());
 //        } catch (Throwable ex) {
@@ -290,7 +290,6 @@ public class Sign {
         return res;
     }
 
-    @Deprecated
     public List<Sign> getAtoms() {
         LinkedList<Sign> res = new LinkedList<>();
         if (decomposition == null) {
@@ -322,4 +321,12 @@ public class Sign {
 //            }
 //        }
 //    }
+    public int getScore() {
+        return (getLength() - 1) * getCountAtom();
+    }
+
+    @Override
+    public int compareTo(Sign o2) {
+        return Integer.compare(o2.getScore(), getScore());
+    }
 }
