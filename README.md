@@ -73,7 +73,7 @@ java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar -p -u 
 ```
 The plot looks like that (see the four reduction steps described before):
 ![example file](example_decomposition.png "example file")
-The file __decompositions.txt__ contains the 1608 raw characters, its decomposed version and the full decomposition
+The file __decompositions.txt__ contains the 1593 raw characters, its decomposed version and the full decomposition
 ```
 [...]
 事	事	事
@@ -84,7 +84,7 @@ The file __decompositions.txt__ contains the 1608 raw characters, its decomposed
 反	反	⿸𠂆又
 [...]
 ```
-The file __leaves.txt__ contains the 416 characters defined as leaves.
+The file __leaves.txt__ contains the 413 characters defined as leaves.
 ```
 [...]
 [ U+06587 '文' len= 1/ 4 (occurance=  19/ 222) leaf=true valid=true] '文'=>'⿱⿱丶一⿻丿乀'

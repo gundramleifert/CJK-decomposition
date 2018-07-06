@@ -118,7 +118,7 @@ public class DecomposerUtil {
         List<Char> values = new LinkedList<>(dec.chars.values());
         if (onlyWithCounts) {
             values.removeIf((t) -> {
-                return t.getCountAtom() <= 0;
+                return t.getCountAtom() <= 0 || t.getLength() < 1;
             });
         }
         values.sort((o1, o2) -> {
@@ -134,7 +134,6 @@ public class DecomposerUtil {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-//            System.out.println(key + " = (len=" + length + ") " + Decomposer.decompose(key));
         }
         FileUtil.writeLines(outFile, out);
 
@@ -189,8 +188,8 @@ public class DecomposerUtil {
         LOG.debug("substituting ambiguous characters...", maxLength);
         while (reduceSolveAmbiguousChars(dec) != null) {
             int size = getCharSet(dec).size();
-            LOG.debug("leaves = {} distributionlength = {}", size, DecomposerUtil.getLengthDistribution(dec));
             double newLength = DecomposerUtil.getAvgLength(dec);
+            LOG.debug(String.format("leaves = %3d avgLength = %.3f distributionlength = %s", size, newLength, getLengthDistribution(dec)));
             listList.get("size").add((double) size);
             listList.get("max impact").add(Double.NaN);
             listList.get("max length").add(Double.NaN);
@@ -202,10 +201,10 @@ public class DecomposerUtil {
         int idx = 1;
         while (reduceMaxImprovement(dec, relImprovement) != null) {
             int size = getCharSet(dec).size();
-            LOG.debug("leaves = {} distributionlength = {}", size, getLengthDistribution(dec));
             double newLength = getAvgLength(dec);
+            LOG.debug(String.format("leaves = %3d avgLength = %.3f distributionlength = %s", size, newLength, getLengthDistribution(dec)));
             if (LOG.isTraceEnabled()) {
-                LOG.trace(String.format("%2d: %.2f %.4f%% %.4f%%", idx++, newLength, (length / newLength - 1) * 100, (newLength / firstlength) * 100));
+                LOG.trace(String.format("%2d: %.3f %.4f%% %.4f%%", idx++, newLength, (length / newLength - 1) * 100, (newLength / firstlength) * 100));
             }//            runList.add((double) i);
             listList.get("size").add((double) size);
             listList.get("max impact").add(newLength);
@@ -221,8 +220,8 @@ public class DecomposerUtil {
         LOG.debug("substituting characters longer than {}...", maxLength);
         while (reduceMaxLength(dec, maxLength) != null) {
             int size = getCharSet(dec).size();
-            LOG.debug("leaves = {} distributionlength = {}", size, getLengthDistribution(dec));
             double newLength = getAvgLength(dec);
+            LOG.debug(String.format("leaves = %3d avgLength = %.3f distributionlength = %s", size, newLength, getLengthDistribution(dec)));
             listList.get("size").add((double) size);
             listList.get("max impact").add(Double.NaN);
             listList.get("max length").add(newLength);
@@ -234,8 +233,8 @@ public class DecomposerUtil {
         LOG.debug("substituting leaves that are only part of one character .", maxLength);
         while (reduceSubstituteLeaf(dec) != null) {
             int size = getCharSet(dec).size();
-            LOG.debug("leaves = {} distributionlength = {}", size, getLengthDistribution(dec));
             double newLength = getAvgLength(dec);
+            LOG.debug(String.format("leaves = %3d avgLength = %.3f distributionlength = %s", size, newLength, getLengthDistribution(dec)));
             listList.get("size").add((double) size);
             listList.get("max impact").add(Double.NaN);
             listList.get("max length").add(Double.NaN);
@@ -243,10 +242,6 @@ public class DecomposerUtil {
             listList.get("ambiguous characters").add(Double.NaN);
         }
 
-//        plot.add(toArray(runList));
-//        plot.add(toArray(sizeList));
-//        plot.add(toArray(lengthList));
-//        plot.add(toArray(lengthList2));
         return listList;
 
     }
@@ -262,7 +257,7 @@ public class DecomposerUtil {
     public static Set<Char> getCharSet(Decomposer composer) {
         HashSet<Char> res = new LinkedHashSet<>();
         for (Char object : composer.chars.values()) {
-            if (object.isLeaf() && object.getCountAtom() > 0) {
+            if (object.isLeaf() && object.getCountAtom() > 0 && object.getLength() > 0) {
                 res.add(object);
             }
         }
