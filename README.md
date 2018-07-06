@@ -12,7 +12,9 @@ git clone https://github.com/gundramleifert/CJK-decomposition.git
 cd CJK-decomposition
 mvn install
 java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar --help
+java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar -i ? -p -u -d -o decomposition.txt -l leaves.txt
 ```
+
 # Dependencies
 * git
 * maven
