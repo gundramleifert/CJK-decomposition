@@ -12,7 +12,15 @@ git clone https://github.com/gundramleifert/CJK-decomposition.git
 cd CJK-decomposition
 mvn install
 ```
+# Dependencies
+* git
+* maven
+* gnuplot
 
+For Ubuntu:
+```
+sudo apt-get install git maven gnuplot
+```
 # Usage
 It can be used as command-line tool or as library in java. For the command line see these examples:
 ```
@@ -26,18 +34,7 @@ java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar -p -u 
 java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar -p -u -d -o decomposition.txt -l leaves.txt `find /path-to-files -name "*.txt"`
 ```
 
-# Dependencies
-* git
-* maven
-* gnuplot
-
-For Ubuntu:
-```
-sudo apt-get install git maven gnuplot
-```
-
-
-## Algorithm to decompose characters
+# Algorithm to decompose characters
 * for each character a direct decomposition is loaded
 * we apply the decomposition recursively to each character
 * at the end, each character has a final decomposition, which is a kind of decomposition-tree
@@ -46,7 +43,7 @@ sudo apt-get install git maven gnuplot
 * the leaves (which are UTF-8 codes) are the basis components (we call them atoms) of the mapping
 * this set of leaves is called 'CharSet'.
 
-## Algorithm to minimize decomposition length (reduce decomposition)
+# Algorithm to minimize decomposition length (reduce decomposition)
 In CJK languages there are characters that occure very often. For these characters it makes sense, to define them as leaves (if they have a valid UTF-8 code) and therefore reduce the decomposition length of characters:
 This method can only work for a given text resource, for which we can optimize the CharSet. The goal is to make some characters into leaves so that the average decomposition length of a character is reduced.
 
@@ -69,10 +66,10 @@ This method can only work for a given text resource, for which we can optimize t
     * turn both characters into leaves
     * repeat until no more character-pairs are found
 
-## Example
+# Example
 if you run
 ```
-java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar -i ? -p -u -d -o decomposition.txt -l leaves.txt
+java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar -p -u -d -o decomposition.txt -l leaves.txt ?
 ```
 The plot looks like that (see the four reduction steps described before):
 ![example file](example_decomposition.png "example file")
@@ -99,7 +96,7 @@ The file _leaves.txt_ contains the ~400 characters defined as leaves.
 [...]
 ```
 
-## Decomposition variants
+# Decomposition variants
 there are 2 variant how a decomposition can be done:
 1. The CharSet also contians character, which have no UTF-8 code. This makes the decomposition a bit easier, but the CharSet is no valid UTF-8 code.
 2. For the decomposition we ignore all Ideographic Description Characters. This reduces the average length of the decomposition by a factor of ~30%, but makes it (almost) impossible to remap decomposition to a character.
