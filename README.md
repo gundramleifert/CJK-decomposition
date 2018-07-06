@@ -40,28 +40,53 @@ In CJK languages there are characters that occure very often. For these characte
 This method can only work for a given text resource, for which we can optimize the CharSet. The goal is to make some characters into leaves so that the average decomposition length of a character is reduced.
 
 * for a given text resource count the number of occurance of all characters and recursively all decomposition parts
-* do: (reduce average length)
+* do __max impact__: (reduce average length)
     * for each character we calculate 'count*(length-1)' which is a score for how much it would reduce the text decomposition length.
     * we define the character with maximal score as new leaf.
     * repeat until the reduction gained by a new leaf is too small.
-* do: (reduce length of all decompositions to a maximal value)
+* do __max length__: (reduce length of all decompositions to a maximal value)
     * find root-character which occures in the text resource with the largest decomposition length
     * find all character in the decomposition tree that makes length of the root-character <= maximal value
     * we define the character with maximal 'count*(length-1)' as new leaf
     * repeat until each root-character has a decomposition <= maximal value
-* do: (make characters with single-occurance of one leaf to leaf itself)
+* do __same occurance__: (make characters with single-occurance of one leaf to leaf itself)
     * search for a valid character which has a leaf with the same number of occurance
     * turn character into leaf => CharMap stays same size or gets lower, but decomposition lenght decreases
     * repeat until no more such characters are found
-* do: (make map "decomposition -> root-character" distinct)
+* do __ambiguous characters__: (make map "decomposition -> root-character" distinct)
     * find character-pairs which have the same decomposition
     * turn both characters into leaves
     * repeat until no more character-pairs are found
 
 ## Example
-
-Inline-style: 
-![example file](example_decomposition.png "Example output")
+if you run
+'''
+java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar -i ? -p -u -d -o decomposition.txt -l leaves.txt
+'''
+The plot looks like that (see the four reduction steps described before):
+![example file](example_decomposition.png "example file")
+The file _decompositions.txt_ contains the ~1600 raw character, its decomposed version and the full decomposition
+'''
+[...]
+事	事	事
+能	厶⺆冫匕匕	⿰⿱厶⿵⺆冫⿱⿺乚丿⿺乚丿
+䏍	厶⺆冫	⿱厶⿵⺆冫
+𫧇	匕匕	⿱⿺乚丿⿺乚丿
+会	人二厶	⿱人⿱⿱一一厶
+反	反	⿸𠂆又
+[...]
+'''
+The file _leaves.txt_ contains the ~400 characters defined as leaves.
+'''
+[...]
+[ U+06587 '文' len= 1/ 4 (occurance=  19/ 222) leaf=true valid=true] '文'=>'⿱⿱丶一⿻丿乀'
+[ U+06535 '攵' len= 1/ 1 (occurance=   0/ 216) leaf=true valid=true] '攵'=>'攵'
+[ U+05C14 '尔' len= 1/ 2 (occurance=   2/ 209) leaf=true valid=true] '尔'=>'⿱𠂊小'
+[ U+00039 '9' len= 1/ 1 (occurance= 192/ 192) leaf=true valid=true] '9'=>'9'
+[ U+09A6C '马' len= 1/ 1 (occurance= 146/ 187) leaf=true valid=true] '马'=>'马'
+[ U+08279 '艹' len= 1/ 2 (occurance=   0/ 184) leaf=true valid=true] '艹'=>'⿻十丨'
+[...]
+'''
 
 
 ## Decomposition variants
