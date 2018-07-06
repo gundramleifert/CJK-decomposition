@@ -38,12 +38,11 @@ public class GetMapping {
         options.addOption("h", "help", false, "show this help");
         options.addOption("r", "raw", false, "do not prune mapping");
         options.addOption("u", "utf8", false, "only use valid utf-8 characters as leaf");
-        options.addOption("d", "idc", false, "delete ideographic description characters for decomposition");
+        options.addOption("i", "idc", false, "delete ideographic description characters for decomposition");
         options.addOption("o", "out-map", true, "path to save output file");
         options.addOption("l", "out-leaves", true, "path to save character set to file");
-        options.addOption("i", "in-directory", true, "path directory with *.txt-files containing characters (set '-i ?  to use internal dummy-file)");
         options.addOption("p", "plot", false, "plot reduction process");
-        options.addOption("m", "maxlength", true, "maximal length of decomposition (default: 11 (with -d: 9)");
+        options.addOption("m", "maxlength", true, "maximal length of decomposition (default: 11 (with -d: 7)");
         options.addOption("g", "gain", true, "minimal gain for adding additional leaves (default: 0.005)");
     }
 
@@ -52,7 +51,7 @@ public class GetMapping {
         mapping.run(args);
     }
 
-    public void run(String[] args) throws IOException {
+    public void run(String[] args) {
         CommandLine cmd = null;
         try {
             cmd = new DefaultParser().parse(options, args);
@@ -63,11 +62,11 @@ public class GetMapping {
             }
             Decomposer.Coding coding = null;
             if (cmd.hasOption('u')) {
-                coding = cmd.hasOption('d') ? Decomposer.Coding.UTF8_IDC : Decomposer.Coding.UTF8;
+                coding = cmd.hasOption('i') ? Decomposer.Coding.UTF8_IDC : Decomposer.Coding.UTF8;
             } else {
-                coding = cmd.hasOption('d') ? Decomposer.Coding.IDC : Decomposer.Coding.ANY;
+                coding = cmd.hasOption('i') ? Decomposer.Coding.IDC : Decomposer.Coding.ANY;
             }
-            int maxlen = cmd.hasOption('m') ? Integer.parseInt(cmd.getOptionValue('m')) : cmd.hasOption('d') ? 7 : 11;
+            int maxlen = cmd.hasOption('m') ? Integer.parseInt(cmd.getOptionValue('m')) : cmd.hasOption('i') ? 7 : 11;
             double gain = cmd.hasOption('g') ? Double.parseDouble(cmd.getOptionValue('g')) : 0.005;
 
             /////////////////////////////
@@ -75,27 +74,50 @@ public class GetMapping {
             /////////////////////////////
             Decomposer dec = new Decomposer(coding);
             if (!cmd.hasOption('r')) {
-                if (!cmd.hasOption('i')) {
-                    help("if -r is not set, option -i have to be set. (set '-i ? to use internal dummy-file)");
+                if (cmd.getArgList().isEmpty()) {
+                    help("if -r is not set, a list files have to be given, but arg-list is empty.");
                 }
                 /////////////////////////
                 /// minimize composer ///
                 /////////////////////////
                 ObjectCounter<Character> oc = new ObjectCounter<>();
-                if (cmd.getOptionValue('i').equals("?")) {
-                    String str = new String(IOUtils.toByteArray(this.getClass().getClassLoader().getResourceAsStream("dummy.txt")));
-                    for (char c : str.toCharArray()) {
-                        oc.add(c);
-                        ///////////////////
-                        /// count chars ///
-                        ///////////////////
-                        dec.count(String.valueOf(c));
+                if (cmd.getArgList().size() == 1 && cmd.getArgList().get(0).equals("?")) {
+                    try {
+                        String str = new String(IOUtils.toByteArray(this.getClass().getClassLoader().getResourceAsStream("dummy.txt")));
+                        for (char c : str.toCharArray()) {
+                            oc.add(c);
+                            ///////////////////
+                            /// count chars ///
+                            ///////////////////
+                            dec.count(String.valueOf(c));
+                        }
+                    } catch (IOException e) {
+                        help("resource 'dummy.txt' cannot be found in jar", e);
                     }
-                    System.out.println(oc);
                 } else {
-                    List<File> listFiles = FileUtil.listFiles(new File(cmd.getOptionValue('i')), "txt", true);
-                    for (File listFile : listFiles) {
-                        List<String> readLines = FileUtil.readLines(listFile);
+                    List<File> files = new LinkedList<>();
+                    String prefix = "";
+                    for (int i = 0; i < cmd.getArgList().size(); i++) {
+                        String get = cmd.getArgList().get(i);
+                        prefix += " " + get;
+                        File file = new File(prefix.trim());
+                        if (file.exists()) {
+                            files.add(file);
+                            prefix = "";
+                        }
+                    }
+                    if (files.isEmpty()) {
+                        help("cannot load files " + cmd.getArgList().toString());
+                    }
+//                    List<File> listFiles = FileUtil.listFiles(new File(cmd.getOptionValue('i')), "txt", true);
+                    LOG.info("found " + files.size() + " files to use as character resources");
+                    for (File listFile : files) {
+                        List<String> readLines = null;
+                        try {
+                            readLines = FileUtil.readLines(listFile);
+                        } catch (RuntimeException e) {
+                            help("file '" + listFile.getAbsolutePath() + "' cannot be found", e);
+                        }
                         for (String readLine : readLines) {
                             for (char c : readLine.toCharArray()) {
                                 oc.add(c);
@@ -169,8 +191,10 @@ public class GetMapping {
         }
         HelpFormatter formater = new HelpFormatter();
         formater.printHelp(
-                "java -jar CJK-decomposition.jar",
-                "This method can be used to create a mapping to decompose chinese, japanese (Kanji) or Korean (Janja) characters into simpler parts",
+                "java -jar CJK-decomposition.jar ( ? | <textfile_utf8-1> <textfile_utf8-2> ... )",
+                "This method can be used to create a mapping to decompose chinese, japanese (Kanji) "
+                + "or Korean (Janja) characters into simpler parts. Either set args '?' of a list of textfile, "
+                + "which are utf-8 coded.",
                 options,
                 suffix,
                 true

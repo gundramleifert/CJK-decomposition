@@ -1,13 +1,10 @@
 package de.uro.citlab.cjk;
 
 import de.uro.citlab.cjk.util.DecomposerUtil;
-import de.uro.citlab.cjk.util.Gnuplot;
-import de.uro.citlab.cjk.util.FileUtil;
 import de.uro.citlab.cjk.types.Char;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -74,12 +71,17 @@ public class Decomposer {
         UTF8_IDC,
     }
 
-    public Decomposer(Coding coding) throws IOException {
+    public Decomposer(Coding coding) {
         this.coding = coding;
         ClassLoader classLoader = Decomposer.class.getClassLoader();
 //        System.out.println(classLoader.getResource("ids.txt").getFile());
         File f = new File(classLoader.getResource("ids.txt").getFile());
-        String[] file = new String(IOUtils.toByteArray(this.getClass().getClassLoader().getResourceAsStream("ids.txt"))).split("\n");
+        String[] file = null;
+        try {
+            file = new String(IOUtils.toByteArray(this.getClass().getClassLoader().getResourceAsStream("ids.txt"))).split("\n");
+        } catch (IOException ex) {
+            throw new RuntimeException("cannot load resource 'ids.txt'", ex);
+        }
 //        List<String> strings = FileUtil.readLines(f);
         //remove both rows at the beginning
         int cntErrorDecompose = 0;

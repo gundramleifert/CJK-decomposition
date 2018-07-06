@@ -11,8 +11,14 @@ As decomposition basis we use the 'ids.txt', which is a copy of https://github.c
 git clone https://github.com/gundramleifert/CJK-decomposition.git
 cd CJK-decomposition
 mvn install
+#to see the help and all parameters
 java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar --help
-java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar -i ? -p -u -d -o decomposition.txt -l leaves.txt
+# to use the example-file in the resources set args = ?
+java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar -p -u -d -o decomposition.txt -l leaves.txt ?
+# to add own files
+java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar -p -u -d -o decomposition.txt -l leaves.txt <file1> <file2>
+# to search for text files in a folder
+java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar -p -u -d -o decomposition.txt -l leaves.txt `find /path-to-files -name "*.txt"`
 ```
 
 # Dependencies
