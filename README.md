@@ -11,6 +11,11 @@ As decomposition basis we use the 'ids.txt', which is a copy of https://github.c
 git clone https://github.com/gundramleifert/CJK-decomposition.git
 cd CJK-decomposition
 mvn install
+```
+
+# Usage
+It can be used as command-line tool or as library in java. For the command line see these examples:
+```
 #to see the help and all parameters
 java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar --help
 # to use the example-file in the resources set args = ?
