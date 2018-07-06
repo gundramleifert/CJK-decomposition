@@ -60,13 +60,13 @@ This method can only work for a given text resource, for which we can optimize t
 
 ## Example
 if you run
-'''
+```
 java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar -i ? -p -u -d -o decomposition.txt -l leaves.txt
-'''
+```
 The plot looks like that (see the four reduction steps described before):
 ![example file](example_decomposition.png "example file")
 The file _decompositions.txt_ contains the ~1600 raw character, its decomposed version and the full decomposition
-'''
+```
 [...]
 事	事	事
 能	厶⺆冫匕匕	⿰⿱厶⿵⺆冫⿱⿺乚丿⿺乚丿
@@ -75,9 +75,9 @@ The file _decompositions.txt_ contains the ~1600 raw character, its decomposed v
 会	人二厶	⿱人⿱⿱一一厶
 反	反	⿸𠂆又
 [...]
-'''
+```
 The file _leaves.txt_ contains the ~400 characters defined as leaves.
-'''
+```
 [...]
 [ U+06587 '文' len= 1/ 4 (occurance=  19/ 222) leaf=true valid=true] '文'=>'⿱⿱丶一⿻丿乀'
 [ U+06535 '攵' len= 1/ 1 (occurance=   0/ 216) leaf=true valid=true] '攵'=>'攵'
@@ -86,8 +86,7 @@ The file _leaves.txt_ contains the ~400 characters defined as leaves.
 [ U+09A6C '马' len= 1/ 1 (occurance= 146/ 187) leaf=true valid=true] '马'=>'马'
 [ U+08279 '艹' len= 1/ 2 (occurance=   0/ 184) leaf=true valid=true] '艹'=>'⿻十丨'
 [...]
-'''
-
+```
 
 ## Decomposition variants
 there are 2 variant how a decomposition can be done:
