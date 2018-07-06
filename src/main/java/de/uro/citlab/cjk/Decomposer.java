@@ -73,9 +73,6 @@ public class Decomposer {
 
     public Decomposer(Coding coding) {
         this.coding = coding;
-        ClassLoader classLoader = Decomposer.class.getClassLoader();
-//        System.out.println(classLoader.getResource("ids.txt").getFile());
-        File f = new File(classLoader.getResource("ids.txt").getFile());
         String[] file = null;
         try {
             file = new String(IOUtils.toByteArray(this.getClass().getClassLoader().getResourceAsStream("ids.txt"))).split("\n");

@@ -137,7 +137,7 @@ public class GetMapping {
                 ////////////////////////////////
                 /// prune decomposition tree ///
                 ////////////////////////////////
-                Map<String, List<Double>> reduceDecomposer = DecomposerUtil.reduceDecomposer(dec, gain, maxlen);
+                Map<String, ? extends List<Double>> reduceDecomposer = DecomposerUtil.reduceDecomposer(dec, gain, maxlen);
 
                 //show some stuff
                 if (cmd.hasOption('p')) {
@@ -152,7 +152,8 @@ public class GetMapping {
                             ys.add(DecomposerUtil.toArray(reduceDecomposer.get(name)));
                         }
                         Gnuplot.withGrid = true;
-                        Gnuplot.plot(DecomposerUtil.toArray(xs), ys, "CharSet size compared to average decomposition length", names, "example_decomposition.png", null);
+//                        Gnuplot.plot(DecomposerUtil.toArray(xs), ys, "Average decomposition length compared to CharSet size", names, "example_decomposition.png", null);
+                        Gnuplot.plot(DecomposerUtil.toArray(xs), ys, "Average decomposition length compared to CharSet size", names, null);
 
                     } catch (Throwable ex) {
                         LOG.warn("GNUplot not installed correctly (or windows is used) - please unset '-p'", ex);

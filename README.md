@@ -48,6 +48,10 @@ In CJK languages there are characters that occure very often. For these characte
 This method can only work for a given text resource, for which we can optimize the CharSet. The goal is to make some characters into leaves so that the average decomposition length of a character is reduced.
 
 * for a given text resource count the number of occurance of all characters and recursively all decomposition parts
+* do __ambiguous characters__: (make map "decomposition -> root-character" distinct)
+    * find character-pairs which have the same decomposition
+    * turn both characters into leaves
+    * repeat until no more character-pairs are found
 * do __max impact__: (reduce average length)
     * for each character we calculate 'count*(length-1)' which is a score for how much it would reduce the text decomposition length.
     * we define the character with maximal score as new leaf.
@@ -61,15 +65,11 @@ This method can only work for a given text resource, for which we can optimize t
     * search for a valid character which has a leaf with the same number of occurance
     * turn character into leaf => CharMap stays same size or gets lower, but decomposition lenght decreases
     * repeat until no more such characters are found
-* do __ambiguous characters__: (make map "decomposition -> root-character" distinct)
-    * find character-pairs which have the same decomposition
-    * turn both characters into leaves
-    * repeat until no more character-pairs are found
 
 # Example
 if you run
 ```
-java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar -p -u -d -o decomposition.txt -l leaves.txt ?
+java -jar target/CJK-decomposition-1.0-SNAPSHOT-jar-with-dependencies.jar -p -u -i -m 5 -o decomposition.txt -l leaves.txt ?
 ```
 The plot looks like that (see the four reduction steps described before):
 ![example file](example_decomposition.png "example file")

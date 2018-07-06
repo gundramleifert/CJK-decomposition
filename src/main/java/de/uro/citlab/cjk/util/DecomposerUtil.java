@@ -164,29 +164,42 @@ public class DecomposerUtil {
         }
     }
 
-    public static Map<String, List<Double>> reduceDecomposer(Decomposer dec, double relImprovement, int maxLength) {
-        Map<String, List<Double>> listList = new LinkedHashMap<>();
+    public static Map<String, LinkedList<Double>> reduceDecomposer(Decomposer dec, double relImprovement, int maxLength) {
+        Map<String, LinkedList<Double>> listList = new LinkedHashMap<>();
         listList.put("size", new LinkedList<>());
+        listList.put("ambiguous characters", new LinkedList<>());
         listList.put("max impact", new LinkedList<>());
         listList.put("max length", new LinkedList<>());
         listList.put("same occurace", new LinkedList<>());
-        listList.put("ambiguous characters", new LinkedList<>());
 //        List<Double> sizeList = new LinkedList<>();
 //        List<Double> lengthList = new LinkedList<>();
 //        List<Double> lengthList2 = new LinkedList<>();
         double length = DecomposerUtil.getAvgLength(dec);
         LOG.debug("average length {}", length);
         double firstlength = length;
-        int idx = 1;
         {
             double newLength = DecomposerUtil.getAvgLength(dec);
             int sizeStart = getCharSet(dec).size();
             listList.get("size").add((double) sizeStart);
-            listList.get("max impact").add(newLength);
+            listList.get("max impact").add(Double.NaN);
             listList.get("max length").add(Double.NaN);
             listList.get("same occurace").add(Double.NaN);
-            listList.get("ambiguous characters").add(Double.NaN);
+            listList.get("ambiguous characters").add(newLength);
         }
+        LOG.debug("substituting ambiguous characters...", maxLength);
+        while (reduceSolveAmbiguousChars(dec) != null) {
+            int size = getCharSet(dec).size();
+            LOG.debug("leaves = {} distributionlength = {}", size, DecomposerUtil.getLengthDistribution(dec));
+            double newLength = DecomposerUtil.getAvgLength(dec);
+            listList.get("size").add((double) size);
+            listList.get("max impact").add(Double.NaN);
+            listList.get("max length").add(Double.NaN);
+            listList.get("same occurace").add(Double.NaN);
+            listList.get("ambiguous characters").add(newLength);
+        }
+        listList.get("max impact").removeLast();
+        listList.get("max impact").add(listList.get("ambiguous characters").getLast());
+        int idx = 1;
         while (reduceMaxImprovement(dec, relImprovement) != null) {
             int size = getCharSet(dec).size();
             LOG.debug("leaves = {} distributionlength = {}", size, getLengthDistribution(dec));
@@ -202,6 +215,9 @@ public class DecomposerUtil {
             length = newLength;
             idx++;
         }
+        listList.get("max length").removeLast();
+        listList.get("max length").add(listList.get("max impact").getLast());
+
         LOG.debug("substituting characters longer than {}...", maxLength);
         while (reduceMaxLength(dec, maxLength) != null) {
             int size = getCharSet(dec).size();
@@ -213,6 +229,8 @@ public class DecomposerUtil {
             listList.get("same occurace").add(Double.NaN);
             listList.get("ambiguous characters").add(Double.NaN);
         }
+        listList.get("same occurace").removeLast();
+        listList.get("same occurace").add(listList.get("max length").getLast());
         LOG.debug("substituting leaves that are only part of one character .", maxLength);
         while (reduceSubstituteLeaf(dec) != null) {
             int size = getCharSet(dec).size();
@@ -223,18 +241,6 @@ public class DecomposerUtil {
             listList.get("max length").add(Double.NaN);
             listList.get("same occurace").add(newLength);
             listList.get("ambiguous characters").add(Double.NaN);
-        }
-
-        LOG.debug("substituting ambiguous characters...", maxLength);
-        while (reduceSolveAmbiguousChars(dec) != null) {
-            int size = getCharSet(dec).size();
-            LOG.debug("leaves = {} distributionlength = {}", size, DecomposerUtil.getLengthDistribution(dec));
-            double newLength = DecomposerUtil.getAvgLength(dec);
-            listList.get("size").add((double) size);
-            listList.get("max impact").add(Double.NaN);
-            listList.get("max length").add(Double.NaN);
-            listList.get("same occurace").add(Double.NaN);
-            listList.get("ambiguous characters").add(newLength);
         }
 
 //        plot.add(toArray(runList));

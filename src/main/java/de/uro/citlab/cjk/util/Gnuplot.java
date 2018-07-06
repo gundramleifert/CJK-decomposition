@@ -315,7 +315,7 @@ public class Gnuplot {
             p.addPlot(dsp);
             plotcnt++;
             PlotStyle stl = ((AbstractPlot) p.getPlots().get(plotcnt)).getPlotStyle();
-            stl.setStyle(Style.LINESPOINTS);
+            stl.setStyle(Style.LINES);
         }
         if (withGrid) {
             p.set("grid", "back lc black");
