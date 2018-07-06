@@ -58,6 +58,12 @@ This method can only work for a given text resource, for which we can optimize t
     * turn both characters into leaves
     * repeat until no more character-pairs are found
 
+## Example
+
+Inline-style: 
+![example file](example_decomposition.png "Example output")
+
+
 ## Decomposition variants
 there are 2 variant how a decomposition can be done:
 1. The CharSet also contians character, which have no UTF-8 code. This makes the decomposition a bit easier, but the CharSet is no valid UTF-8 code.

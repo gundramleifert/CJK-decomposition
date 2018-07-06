@@ -69,9 +69,7 @@ public class GetMapping {
             }
             int maxlen = cmd.hasOption('m') ? Integer.parseInt(cmd.getOptionValue('m')) : cmd.hasOption('d') ? 7 : 11;
             double gain = cmd.hasOption('g') ? Double.parseDouble(cmd.getOptionValue('g')) : 0.005;
-//            File root = new File(".");
-//            File folder = new File(root, coding.toString());
-//            folder.mkdir();
+
             /////////////////////////////
             /// create raw decomposer ///
             /////////////////////////////
@@ -80,9 +78,6 @@ public class GetMapping {
                 if (!cmd.hasOption('i')) {
                     help("if -r is not set, option -i have to be set. (set '-i ? to use internal dummy-file)");
                 }
-                //dump some stuff
-//            DecomposerUtil.saveCharSet(dec, new File(folder, "leaves.txt"), true);
-//            DecomposerUtil.saveMap(dec, new File(folder, "map.txt"), true, true);
                 /////////////////////////
                 /// minimize composer ///
                 /////////////////////////
@@ -121,7 +116,6 @@ public class GetMapping {
                 /// prune decomposition tree ///
                 ////////////////////////////////
                 Map<String, List<Double>> reduceDecomposer = DecomposerUtil.reduceDecomposer(dec, gain, maxlen);
-//dump some stuff
 
                 //show some stuff
                 if (cmd.hasOption('p')) {
@@ -136,22 +130,22 @@ public class GetMapping {
                             ys.add(DecomposerUtil.toArray(reduceDecomposer.get(name)));
                         }
                         Gnuplot.withGrid = true;
-                        Gnuplot.plot(DecomposerUtil.toArray(xs), ys, "CharSet size compared to average decomposition length", names, null);
+                        Gnuplot.plot(DecomposerUtil.toArray(xs), ys, "CharSet size compared to average decomposition length", names, "example_decomposition.png", null);
 
                     } catch (Throwable ex) {
-                        LOG.warn("GNUplot not installed correctly (or windows is used) - skip display", ex);
-                        System.out.println("GNUplot not installed correctly (or windows is used) - skip display");
+                        LOG.warn("GNUplot not installed correctly (or windows is used) - please unset '-p'", ex);
+                        help("GNUplot not installed correctly (or windows is used) - please unset '-p'", ex);
                     }
                 }
             }
+
+            //dump some stuff
             if (cmd.hasOption('l')) {
                 DecomposerUtil.saveCharSet(dec, new File(cmd.getOptionValue('l')), true);
             }
             if (cmd.hasOption('o')) {
                 DecomposerUtil.saveMap(dec, new File(cmd.getOptionValue('o')), true, true);
             }
-//        System.out.println((int) '土');
-//        System.out.println((int) '士');
         } catch (ParseException ex) {
             help("Failed to parse comand line properties", ex);
         }
